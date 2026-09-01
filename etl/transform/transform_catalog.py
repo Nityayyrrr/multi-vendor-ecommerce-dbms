@@ -292,7 +292,7 @@ def transform_catalog(
             else:
                 tags.add("standard")
 
-            for t in tags:
+            for t in sorted(tags):
                 product_tag_records.append({
                     "product_id": pid,
                     "tag": t

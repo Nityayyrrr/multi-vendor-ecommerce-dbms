@@ -1,14 +1,9 @@
-# Canonical 12-Table Relational Schema Architecture Specification
-## Multi-Vendor E-Commerce Database Management System (DBMS)
+# Phase 1 — Conceptual Design & Relational Schema Specification
+## Multi-Vendor E-Commerce & Inventory Management System
 
-> [!IMPORTANT]
-> **DOCUMENT CLASSIFICATION: ACTIVE AUTHORITATIVE SCHEMA SPECIFICATION**  
-> This document is the single active, approved canonical database architecture specification defining the 12 MySQL 8.4 tables, constraints, keys, and loading dependencies.
-
-**Target File Location:** `documentation/final_schema_specification.md`  
-**Target RDBMS:** MySQL 8.4 LTS (InnoDB Storage Engine, UTF8MB4 Character Set)  
-**Specification Date:** 2026-09-01  
-**Status:** Approved Canonical Schema Architecture (Design & Transformation Specification)
+**Target Database:** MySQL 8.4 LTS (`multivendor_ecommerce_db`)  
+**Storage Engine:** InnoDB | **Character Set:** UTF8MB4  
+**Project Phase:** Phase 1 (Problem Definition, ER Modeling & Relational Schema Specification)  
 
 ---
 

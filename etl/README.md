@@ -2,7 +2,7 @@
 ## Multi-Vendor E-Commerce & Inventory Management System
 
 ### 1. Overview
-This directory contains the production-grade ETL (Extract, Transform, Load) and validation pipeline for Phase 3 of the Multi-Vendor E-Commerce DBMS project. The pipeline transforms the 9 raw immutable Olist CSV datasets located in `data/raw/` into the canonical 12-table relational schema for MySQL 8.4 (`multivendor_ecommerce_db`).
+This directory contains the Python-based ETL (Extract, Transform, Load) and validation pipeline for Phase 3 of the Multi-Vendor E-Commerce DBMS project. The pipeline transforms the 9 raw immutable Olist CSV datasets located in `data/raw/` into the canonical 12-table relational schema for MySQL 8.4 (`multivendor_ecommerce_db`).
 
 ---
 

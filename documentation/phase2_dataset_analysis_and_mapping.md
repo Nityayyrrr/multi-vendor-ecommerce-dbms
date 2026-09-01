@@ -1,13 +1,9 @@
 # Phase 2 — Olist Dataset Analysis and Source-to-Target Mapping Report
+## Multi-Vendor E-Commerce & Inventory Management System
 
-> [!IMPORTANT]
-> **DOCUMENT CLASSIFICATION: ACTIVE AUTHORITATIVE SPECIFICATION**  
-> This document is the single active, authoritative Phase 2 source-to-target mapping and data-model resolution specification for Phase 3 ETL.
-
-**Project:** Multi-Vendor E-Commerce & Inventory Management System  
-**DBMS:** MySQL 8.4  
+**Target Database:** MySQL 8.4 LTS (`multivendor_ecommerce_db`)  
 **Dataset Analyzed:** Brazilian E-Commerce Public Dataset by Olist (9 Raw CSV Files in `data/raw/`)  
-**Phase Status:** Phase 2 Complete (Dataset Inspected, Analyzed, Documented, and Mapped — Ready for ETL Approval)
+**Project Phase:** Phase 2 (Dataset Investigation, Field Mapping & Synthetic Augmentation Design)  
 
 ---
 
