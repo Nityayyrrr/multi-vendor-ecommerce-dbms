@@ -1,0 +1,84 @@
+category_id,category_name,parent_category_id
+1,Electronics & Appliances,
+2,Home & Furniture,
+3,Fashion & Accessories,
+4,Health & Beauty,
+5,"Sports, Hobbies & Leisure",
+6,Automotive & Industry,
+7,Food & Beverages,
+8,Pet Care,
+9,"Stationery, Gifts & Misc",
+10,Agro Industry & Commerce,6
+11,Food,7
+12,Food Drink,7
+13,Art,5
+14,Arts & Craftmanship,5
+15,Party Supplies,5
+16,Christmas Supplies,5
+17,Audio,1
+18,Auto,6
+19,Baby,5
+20,Drinks,7
+21,Health Beauty,4
+22,Toys,5
+23,Bed Bath Table,2
+24,Home Confort,2
+25,Home Comfort 2,2
+26,Home Construction,2
+27,Cds Dvds Musicals,5
+28,Cine Photo,1
+29,Air Conditioning,2
+30,Consoles Games,1
+31,Construction Tools Construction,6
+32,Costruction Tools Tools,6
+33,Construction Tools Lights,6
+34,Costruction Tools Garden,6
+35,Construction Tools Safety,6
+36,Cool Stuff,9
+37,Dvds Blu Ray,5
+38,Home Appliances,1
+39,Home Appliances 2,1
+40,Electronics,1
+41,Small Appliances,1
+42,Sports Leisure,5
+43,Fashion Bags Accessories,3
+44,Fashion Shoes,3
+45,Fashion Sport,3
+46,Fashio Female Clothing,3
+47,Fashion Childrens Clothes,3
+48,Fashion Male Clothing,3
+49,Fashion Underwear Beach,3
+50,Garden Tools,6
+51,Flowers,2
+52,Diapers & Hygiene,4
+53,Industry Commerce & Business,6
+54,Computers Accessories,1
+55,Musical Instruments,5
+56,La Cuisine,2
+57,Books Imported,5
+58,Books General Interest,5
+59,Books Technical,5
+60,Luggage Accessories,3
+61,Market Place,9
+62,Furniture Mattress & Upholstery,2
+63,Kitchen Dining Laundry Garden Furniture,2
+64,Furniture Decor,2
+65,Office Furniture,2
+66,Furniture Bedroom,2
+67,Furniture Living Room,2
+68,Music,5
+69,Stationery,9
+70,PC Gaming,1
+71,Computers,1
+72,Perfumery,4
+73,Pet Shop,8
+74,Small Appliances Home Oven & Coffee,1
+75,Kitchen & Food Appliances,1
+76,Watches Gifts,3
+77,Security & Services,6
+78,Signaling & Security,6
+79,Tablets Printing Image,1
+80,Telephony,1
+81,Fixed Telephony,1
+82,Housewares,2
+83,General Merchandise / Uncategorized,9

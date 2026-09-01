@@ -1,0 +1,9 @@
+warehouse_id,location,capacity
+1,São Paulo Central Hub (SP),1000000
+2,Campinas Logistics Park (SP),750000
+3,Rio de Janeiro Distribution Center (RJ),600000
+4,Belo Horizonte Hub (MG),500000
+5,Curitiba Regional Hub (PR),500000
+6,Porto Alegre Hub (RS),400000
+7,Salvador Northeast Center (BA),350000
+8,Brasília Central Hub (DF),300000
