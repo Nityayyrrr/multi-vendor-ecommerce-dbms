@@ -16,6 +16,7 @@ def validate_sql_files(database_dir):
         "02_create_tables.sql",
         "03_constraints.sql",
         "schema.sql",
+        "setup_database.sql",
         "04_validation_queries.sql"
     ]
     
@@ -28,9 +29,12 @@ def validate_sql_files(database_dir):
             print(f"  [FAIL] Missing script: {f}")
             return False
 
-    # Read unified schema.sql and component scripts
+    # Read unified schema.sql, setup_database.sql, and component scripts
     with open(os.path.join(database_dir, "schema.sql"), "r", encoding="utf-8") as sf:
         schema_sql = sf.read()
+
+    with open(os.path.join(database_dir, "setup_database.sql"), "r", encoding="utf-8") as sdbf:
+        setup_db_sql = sdbf.read()
 
     with open(os.path.join(database_dir, "02_create_tables.sql"), "r", encoding="utf-8") as tf:
         tables_sql = tf.read()
@@ -112,7 +116,7 @@ def validate_sql_files(database_dir):
     
     for c_tbl, c_col, p_tbl, p_col in expected_fks:
         fk_pat = rf"FOREIGN\s+KEY\s*\([`]?{c_col}[`]?\)\s*REFERENCES\s*[`]?{p_tbl}[`]?\s*\([`]?{p_col}[`]?\)"
-        if re.search(fk_pat, constraints_sql, re.IGNORECASE) or re.search(fk_pat, schema_sql, re.IGNORECASE):
+        if (re.search(fk_pat, constraints_sql, re.IGNORECASE) or re.search(fk_pat, schema_sql, re.IGNORECASE)) and re.search(fk_pat, setup_db_sql, re.IGNORECASE):
             print(f"  [PASS] FK: {c_tbl}({c_col}) -> {p_tbl}({p_col})")
         else:
             print(f"  [FAIL] Missing FK: {c_tbl}({c_col}) -> {p_tbl}({p_col})")
@@ -127,7 +131,7 @@ def validate_sql_files(database_dir):
     ]
     for tbl, col in expected_uniques:
         uq_pat = rf"UNIQUE\s*\([`]?{col}[`]?\)"
-        if re.search(uq_pat, constraints_sql, re.IGNORECASE) or re.search(uq_pat, schema_sql, re.IGNORECASE):
+        if (re.search(uq_pat, constraints_sql, re.IGNORECASE) or re.search(uq_pat, schema_sql, re.IGNORECASE)) and re.search(uq_pat, setup_db_sql, re.IGNORECASE):
             print(f"  [PASS] UNIQUE constraint on {tbl}.{col}")
         else:
             print(f"  [FAIL] Missing UNIQUE constraint on {tbl}.{col}")
@@ -157,7 +161,7 @@ def validate_sql_files(database_dir):
         "chk_payment_status"
     ]
     for chk in check_constraints:
-        if chk in constraints_sql and chk in schema_sql:
+        if chk in constraints_sql and chk in schema_sql and chk in setup_db_sql:
             print(f"  [PASS] CHECK constraint verified: {chk}")
         else:
             print(f"  [FAIL] Missing CHECK constraint: {chk}")

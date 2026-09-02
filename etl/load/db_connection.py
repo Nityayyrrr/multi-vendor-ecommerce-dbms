@@ -20,10 +20,10 @@ def get_connection(db_name: Optional[str] = None, autocommit: bool = False):
 
 def initialize_database_schema(schema_sql_path: Optional[str] = None) -> bool:
     """
-    Creates database if not exists and executes schema.sql to establish canonical 12 tables.
+    Creates database if not exists and executes setup_database.sql to establish canonical 12 tables.
     """
     if schema_sql_path is None:
-        schema_sql_path = str(DATABASE_DIR / "schema.sql")
+        schema_sql_path = str(DATABASE_DIR / "setup_database.sql")
 
     print("--- Initializing MySQL 8.4 Database and Schema ---")
     

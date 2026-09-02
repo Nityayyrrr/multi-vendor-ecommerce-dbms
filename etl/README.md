@@ -76,6 +76,12 @@ Stage 13:  PAYMENT (FK -> ORDERS)
 
 ### 5. Running the Pipeline
 
+#### Prerequisites
+Ensure requirements are installed from the root repository directory:
+```bash
+pip install -r requirements.txt
+```
+
 #### Full Pipeline (Extract, Dry-Run, Schema Init, Load, Validate)
 ```bash
 python -m etl.run_etl

@@ -1,6 +1,7 @@
 -- Multi-Vendor E-Commerce & Inventory Management System
--- Complete database schema for MySQL 8.4
--- Authoritative Consolidated Schema Definition (Non-destructive)
+-- Master Database Setup Entry Point for MySQL 8.4
+-- Creates the database and all 12 canonical tables with full integrity constraints.
+-- Non-destructive: Uses CREATE DATABASE IF NOT EXISTS and CREATE TABLE IF NOT EXISTS.
 
 CREATE DATABASE IF NOT EXISTS `multivendor_ecommerce_db`
     CHARACTER SET utf8mb4

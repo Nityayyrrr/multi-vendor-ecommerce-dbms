@@ -195,11 +195,12 @@ multi-vendor-ecommerce-dbms/
 │   └── processed/                 # Staged intermediate CSV files (12 clean datasets)
 │
 ├── database/
-│   ├── 01_create_database.sql     # Database creation and character set setup
-│   ├── 02_create_tables.sql       # Table definitions for all 12 entities
-│   ├── 03_constraints.sql         # Primary keys, foreign keys, unique, and check constraints
+│   ├── 01_create_database.sql     # Database creation and character set setup (Phase 1 modular)
+│   ├── 02_create_tables.sql       # Table definitions for all 12 entities (Phase 1 modular)
+│   ├── 03_constraints.sql         # Primary keys, foreign keys, unique, and check constraints (Phase 1 modular)
 │   ├── 04_validation_queries.sql  # SQL queries to verify schema and constraints
-│   ├── schema.sql                 # Unified master schema DDL
+│   ├── schema.sql                 # Authoritative consolidated schema definition
+│   ├── setup_database.sql         # Non-destructive master database setup entry point
 │   └── validate_schema.py         # Static schema validation script
 │
 ├── documentation/
@@ -230,24 +231,56 @@ multi-vendor-ecommerce-dbms/
 │
 ├── .env.example                   # Template environment configuration
 ├── .gitignore                     # Git exclusion rules (credentials, cache, virtual environments)
+├── requirements.txt               # Required Python packages (pymysql, python-dotenv)
 └── README.md                      # Project root documentation
 ```
 
 ---
 
-## 8. Setup & Installation
+## 8. Running the Database Locally
+
+This guide explains how to set up and populate `multivendor_ecommerce_db` on a fresh computer (Windows, macOS, or Linux).
 
 ### Prerequisites
-- Python 3.10 or higher
-- MySQL Server 8.4 (or 8.0+)
-- MySQL Workbench (recommended for viewing schemas and running queries)
+- **MySQL Server 8.4** (or MySQL 8.0+) installed and running.
+- **MySQL Workbench** (recommended GUI) or the MySQL Command Line Client.
+- **Python 3.10+** installed.
 
-### 1. Configure Environment Variables
-Copy `.env.example` to `.env` in the project root:
-```bash
+---
+
+### Step 1: Clone the Repository & Install Dependencies
+
+Clone the project repository and install the minimal required Python libraries:
+
+```powershell
+# Windows PowerShell / Command Prompt
+git clone https://github.com/Nityayyrrr/multi-vendor-ecommerce-dbms.git
+cd multi-vendor-ecommerce-dbms
+
+pip install -r requirements.txt
+```
+
+*(The `requirements.txt` file contains only two genuine dependencies: `pymysql` for database connectivity and `python-dotenv` for reading environment variables.)*
+
+---
+
+### Step 2: Configure Database Credentials
+
+Create a local `.env` configuration file from the provided template:
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+
+# Windows CMD
+copy .env.example .env
+
+# macOS / Linux
 cp .env.example .env
 ```
-Edit `.env` with your local MySQL credentials:
+
+Open `.env` in any text editor and specify your local MySQL credentials:
+
 ```ini
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
@@ -256,44 +289,78 @@ MYSQL_PASSWORD=your_actual_password
 MYSQL_DATABASE=multivendor_ecommerce_db
 ```
 
-### 2. Install Python Dependencies
-```bash
-pip install pymysql python-dotenv
-```
+> **Note on Security:** The `.env` file is listed in `.gitignore` and must never be committed to source control.
 
 ---
 
-## 9. Running the ETL Pipeline
+### Step 3: Create the Database Structure
 
-The ETL pipeline can be executed using the master runner `etl/run_etl.py`:
+You can create the database schema in one of two ways:
 
-### Option A: Complete End-to-End Pipeline
-Extracts raw data, transforms CSVs, performs dry-run validation, initializes the MySQL schema, loads all 12 tables in 13 stages, and runs live database validation:
-```bash
+#### Method A: Using MySQL Workbench or MySQL CLI (Recommended)
+Open `database/setup_database.sql` in MySQL Workbench and execute the script (or run via command line):
+
+```powershell
+mysql -u root -p < database/setup_database.sql
+```
+
+This creates `multivendor_ecommerce_db` and all 12 canonical tables with all primary keys, composite keys, foreign keys, unique constraints, check constraints, and indexes.
+
+> **Safety Note:** `setup_database.sql` is non-destructive. It uses `CREATE DATABASE IF NOT EXISTS` and `CREATE TABLE IF NOT EXISTS` without `DROP TABLE` statements, making it safe to run without deleting existing data. Note that `IF NOT EXISTS` creates tables only if they are not already present; it does not alter or modify an already-existing table definition.
+
+#### Method B: Automated Initialization via Python ETL
+If you run the ETL pipeline (Step 4), the script automatically executes the schema creation step before loading data.
+
+---
+
+### Step 4: Populate Data via the ETL Pipeline
+
+Populate the database using the master Python ETL runner (`etl/run_etl.py`):
+
+#### Option 1: End-to-End Pipeline (Extract, Transform & Load)
+Reads the 9 raw Olist CSVs from `data/raw/`, applies all business transformations, performs a pre-load dry-run check, creates the schema, loads 778,244 records across 13 stages, and runs the live 27-check validation suite:
+
+```powershell
 python -m etl.run_etl
 ```
 
-### Option B: Dry-Run Validation Only (No Database Connection Required)
-Runs extraction, transformation, and verifies the 27 integrity checks on `data/processed/` without modifying MySQL:
-```bash
-python -m etl.run_etl --dry-run-only
-```
+#### Option 2: Fast Reload (Skip Transformation)
+Directly batch-loads the 12 staged CSV files already present in `data/processed/`:
 
-### Option C: Live MySQL Validation Only
-Executes the 27 SQL integrity checks directly against the populated MySQL database:
-```bash
-python -m etl.run_etl --validate-only
-```
-
-### Option D: Skip Transformation (Fast Reload)
-Loads directly from existing files in `data/processed/`:
-```bash
+```powershell
 python -m etl.run_etl --skip-transform
 ```
 
 ---
 
-## 10. Automated Validation Suite (27 Checks)
+### Step 5: Validate the Setup
+
+Verify that the database structure and loaded data are complete and correct:
+
+1. **Automated Live MySQL Validation (27 Integrity Checks):**
+   ```powershell
+   python -m etl.run_etl --validate-only
+   ```
+   *Verifies row counts across all 12 tables, zero orphan foreign keys, domain check constraints, and conserved unit counts.*
+
+2. **Static Schema Validation:**
+   ```powershell
+   python database/validate_schema.py
+   ```
+   *Verifies all SQL scripts (`setup_database.sql`, `schema.sql`, and modular files) against the canonical ER architecture.*
+
+3. **Manual Verification via MySQL Workbench:**
+   Open and execute `database/04_validation_queries.sql` in MySQL Workbench to inspect table definitions, primary keys, foreign key cascade actions, unique indexes, and check constraints directly from MySQL's `information_schema`.
+
+---
+
+### Step 6: Run Analytical SQL Queries
+
+Once the setup is validated, the database is ready for analytical querying. You can connect through MySQL Workbench, VS Code, or Python scripts to run SQL queries against `multivendor_ecommerce_db`.
+
+---
+
+## 9. Automated Validation Suite (27 Checks)
 
 The validation suite (`etl/validate/validate_etl.py`) enforces 27 relational and domain integrity checks across both staged CSVs and the live MySQL database:
 
@@ -311,7 +378,7 @@ The validation suite (`etl/validate/validate_etl.py`) enforces 27 relational and
 
 ---
 
-## 11. SQL Query Analysis Phase (Upcoming)
+## 10. SQL Query Analysis Phase (Upcoming)
 
 The SQL analysis phase will focus on executing comprehensive analytical queries against the populated `multivendor_ecommerce_db` database, demonstrating:
 - Multi-table joins (inner, left, self-joins on recursive category hierarchy).
@@ -322,3 +389,4 @@ The SQL analysis phase will focus on executing comprehensive analytical queries 
 - Business performance questions.
 
 *(Phase 4 query files and contributions will be added during the upcoming project phase.)*
+
