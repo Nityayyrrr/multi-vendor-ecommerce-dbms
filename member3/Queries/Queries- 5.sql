@@ -1,10 +1,13 @@
+USE multivendor_ecommerce_db;
+
+-- Query 5: Inventory details with product name, warehouse location, and stock quantity
 SELECT 
-    i.inventory_id,
+    p.product_id,
     p.product_name,
     w.location,
-    i.quantity
-FROM Inventory i
-JOIN Products p
+    i.stock_quantity
+FROM inventory i
+JOIN product p
     ON i.product_id = p.product_id
-JOIN Warehouses w
+JOIN warehouse w
     ON i.warehouse_id = w.warehouse_id;
