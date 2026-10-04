@@ -1,4 +1,4 @@
-/*isplay each order item together with the corresponding product name, quantity, and purchase price.*/
+/* Display each order item together with the corresponding product name, quantity, and purchase price.*/
 
 
 SELECT

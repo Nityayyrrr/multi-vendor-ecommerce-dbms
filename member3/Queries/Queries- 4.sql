@@ -1,6 +1,3 @@
-USE multivendor_ecommerce_db;
-
--- Query 4: Highest priced product per category
 SELECT *
 FROM product p
 WHERE p.price = (

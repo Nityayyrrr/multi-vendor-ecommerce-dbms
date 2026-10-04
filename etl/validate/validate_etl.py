@@ -5,10 +5,14 @@ Provides explicit 1-to-27 granular verification across both:
 2. Post-Load Live Database Validation (executes 27 SQL verification checks against MySQL 8.4)
 """
 import csv
+import os
 import re
 import sys
 from collections import defaultdict
 from typing import Dict, List, Any, Tuple, Optional
+
+# Ensure repository root is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from etl.config import PROCESSED_FILES
 

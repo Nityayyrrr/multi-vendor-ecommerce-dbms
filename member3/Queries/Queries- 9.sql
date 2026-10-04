@@ -1,6 +1,3 @@
-USE multivendor_ecommerce_db;
-
--- Query 9: Total inventory quantity and warehouse location by warehouse
 SELECT 
     w.warehouse_id,
     w.location,

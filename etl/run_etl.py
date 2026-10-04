@@ -7,9 +7,13 @@ Executes the full pipeline:
 4. 13-Stage Topological Batch Loading
 5. Post-Load Live MySQL Validation Suite (27 checks)
 """
+import os
 import sys
 import time
 import argparse
+
+# Ensure repository root is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from etl.transform.pipeline import run_transformation_pipeline
 from etl.validate.validate_etl import validate_dry_run_csvs, validate_mysql_database
