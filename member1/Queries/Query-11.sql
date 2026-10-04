@@ -1,0 +1,6 @@
+SELECT v.vendor_id, v.vendor_name,
+       SUM(oi.quantity * oi.price_at_purchase) AS total_sales
+FROM vendor v
+JOIN product p ON v.vendor_id = p.vendor_id
+JOIN order_item oi ON p.product_id = oi.product_id
+GROUP BY v.vendor_id, v.vendor_name;
