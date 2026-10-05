@@ -2,9 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Base Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Load environment variables from .env file
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 DATA_DIR = BASE_DIR / "data"
@@ -13,10 +11,9 @@ PROCESSED_DATA_DIR = DATA_DIR / "processed"
 DOCS_DIR = BASE_DIR / "documentation"
 DATABASE_DIR = BASE_DIR / "database"
 
-# Ensure processed directory exists
 PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Raw Source File Paths
+# Raw Olist CSV paths
 RAW_FILES = {
     "customers": RAW_DATA_DIR / "olist_customers_dataset.csv",
     "orders": RAW_DATA_DIR / "olist_orders_dataset.csv",
@@ -29,7 +26,7 @@ RAW_FILES = {
     "geolocation": RAW_DATA_DIR / "olist_geolocation_dataset.csv",
 }
 
-# Transformed / Processed CSV Output Paths
+# Output CSV paths (what we load into MySQL)
 PROCESSED_FILES = {
     "customer": PROCESSED_DATA_DIR / "customer.csv",
     "customer_phone": PROCESSED_DATA_DIR / "customer_phone.csv",
@@ -45,7 +42,7 @@ PROCESSED_FILES = {
     "payment": PROCESSED_DATA_DIR / "payment.csv",
 }
 
-# MySQL 8.4 Database Connection Parameters
+# MySQL connection settings (read from .env)
 DB_CONFIG = {
     "host": os.environ.get("MYSQL_HOST", "127.0.0.1"),
     "port": int(os.environ.get("MYSQL_PORT", 3306)),
@@ -56,5 +53,6 @@ DB_CONFIG = {
     "autocommit": False,
 }
 
-# Batch insertion chunk size for fast and safe loading
+# How many rows to INSERT at a time
 BATCH_SIZE = 5000
+
