@@ -1,7 +1,6 @@
 """
-13-Stage Topological MySQL Batch Loader for Multi-Vendor E-Commerce DBMS.
-Executes dependency-safe batch inserts with explicit transaction handling.
-Strict Zero-INSERT-IGNORE Policy.
+Loads the 12 processed CSVs into MySQL across 13 ordered stages.
+Uses plain INSERT (no INSERT IGNORE) so any PK violation fails loudly.
 """
 import csv
 import time
@@ -18,10 +17,7 @@ def load_table_in_batches(
     stage_num: int,
     stage_desc: str
 ) -> int:
-    """
-    Inserts rows into MySQL table using parameterized batch inserts.
-    Prohibits INSERT IGNORE. Rolls back on error and logs failure details.
-    """
+    """Batch-insert rows into a single table. Rolls back on any error."""
     if not rows:
         print(f"  [Stage {stage_num}] {stage_desc}: 0 rows to load.")
         return 0
@@ -51,9 +47,7 @@ def load_table_in_batches(
     return total_inserted
 
 def execute_13_stage_load() -> Dict[str, int]:
-    """
-    Executes the complete 13-stage topological loading sequence into MySQL 8.4.
-    """
+    """Run all 13 load stages in FK-safe order and return the per-table row counts."""
     print("=================================================================")
     print("PHASE 3 ETL: 13-STAGE TOPOLOGICAL MYSQL 8.4 POPULATION")
     print("=================================================================")
@@ -69,9 +63,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             with open(fpath, "r", encoding="utf-8") as f:
                 tables_data[tbl] = list(csv.DictReader(f))
 
-        # -------------------------------------------------------------
-        # STAGE 1: CUSTOMER
-        # -------------------------------------------------------------
+        # Stage 1: CUSTOMER
         cust_rows = [
             (r["customer_id"], r["name"], r["email"], r["join_date"])
             for r in tables_data["customer"]
@@ -81,9 +73,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             cust_rows, 1, "CUSTOMER Master Accounts"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 2: CUSTOMER_PHONE
-        # -------------------------------------------------------------
+        # Stage 2: CUSTOMER_PHONE
         phone_rows = [
             (r["customer_id"], r["phone_number"], r["phone_type"])
             for r in tables_data["customer_phone"]
@@ -93,9 +83,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             phone_rows, 2, "CUSTOMER_PHONE (Synthetic)"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 3: ADDRESS
-        # -------------------------------------------------------------
+        # Stage 3: ADDRESS
         addr_rows = [
             (r["customer_id"], r["address_type"], r["street"], r["city"], r["state"], r["pincode"], int(r["is_default"]))
             for r in tables_data["address"]
@@ -105,9 +93,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             addr_rows, 3, "ADDRESS Delivery Entities"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 4: VENDOR
-        # -------------------------------------------------------------
+        # Stage 4: VENDOR
         vendor_rows = [
             (r["vendor_id"], r["vendor_name"], float(r["rating"]), r["gst_number"])
             for r in tables_data["vendor"]
@@ -117,9 +103,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             vendor_rows, 4, "VENDOR Marketplace Sellers"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 5: CATEGORY (L1 Root Categories: parent_category_id IS NULL)
-        # -------------------------------------------------------------
+        # Stage 5: CATEGORY (L1 root categories)
         l1_cat_rows = [
             (int(r["category_id"]), r["category_name"], None)
             for r in tables_data["category"]
@@ -130,9 +114,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             l1_cat_rows, 5, "CATEGORY (L1 Root Taxonomy)"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 6: CATEGORY (L2 Subcategories: parent_category_id IS NOT NULL)
-        # -------------------------------------------------------------
+        # Stage 6: CATEGORY (L2 subcategories)
         l2_cat_rows = [
             (int(r["category_id"]), r["category_name"], int(r["parent_category_id"]))
             for r in tables_data["category"]
@@ -144,9 +126,7 @@ def execute_13_stage_load() -> Dict[str, int]:
         )
         loaded_counts["category"] = len(l1_cat_rows) + len(l2_cat_rows)
 
-        # -------------------------------------------------------------
-        # STAGE 7: WAREHOUSE
-        # -------------------------------------------------------------
+        # Stage 7: WAREHOUSE
         wh_rows = [
             (int(r["warehouse_id"]), r["location"], int(r["capacity"]))
             for r in tables_data["warehouse"]
@@ -156,9 +136,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             wh_rows, 7, "WAREHOUSE Regional Hubs"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 8: PRODUCT
-        # -------------------------------------------------------------
+        # Stage 8: PRODUCT
         prod_rows = [
             (r["product_id"], r["product_name"], r["description"], float(r["price"]), int(r["category_id"]), r["vendor_id"], r["status"])
             for r in tables_data["product"]
@@ -168,9 +146,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             prod_rows, 8, "PRODUCT Platform Master Catalog"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 9: PRODUCT_TAG
-        # -------------------------------------------------------------
+        # Stage 9: PRODUCT_TAG
         tag_rows = [
             (r["product_id"], r["tag"])
             for r in tables_data["product_tag"]
@@ -180,9 +156,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             tag_rows, 9, "PRODUCT_TAG Search Keywords"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 10: INVENTORY
-        # -------------------------------------------------------------
+        # Stage 10: INVENTORY
         inv_rows = [
             (r["product_id"], int(r["warehouse_id"]), int(r["stock_quantity"]), int(r["reorder_level"]), r["last_updated"])
             for r in tables_data["inventory"]
@@ -192,9 +166,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             inv_rows, 10, "INVENTORY Stock & Reorder Levels"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 11: ORDERS
-        # -------------------------------------------------------------
+        # Stage 11: ORDERS
         order_rows = [
             (r["order_id"], r["customer_id"], r["order_date"], r["status"])
             for r in tables_data["orders"]
@@ -204,9 +176,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             order_rows, 11, "ORDERS Transaction Master"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 12: ORDER_ITEM
-        # -------------------------------------------------------------
+        # Stage 12: ORDER_ITEM
         item_rows = [
             (r["order_id"], r["product_id"], int(r["quantity"]), float(r["price_at_purchase"]))
             for r in tables_data["order_item"]
@@ -216,9 +186,7 @@ def execute_13_stage_load() -> Dict[str, int]:
             item_rows, 12, "ORDER_ITEM (Aggregated Pairs)"
         )
 
-        # -------------------------------------------------------------
-        # STAGE 13: PAYMENT
-        # -------------------------------------------------------------
+        # Stage 13: PAYMENT
         pay_rows = [
             (r["order_id"], int(r["payment_id"]), float(r["amount"]), r["mode"], r["status"], r["payment_date"], r["transaction_reference"])
             for r in tables_data["payment"]
