@@ -1,16 +1,13 @@
 """
-Transform Catalog Entities: CATEGORY, PRODUCT, PRODUCT_TAG.
-Canonical Target Tables:
-- CATEGORY (Surrogate PK: category_id, Self-referencing FK: parent_category_id)
-- PRODUCT (PK: product_id, FKs -> CATEGORY, VENDOR)
-- PRODUCT_TAG (Composite PK: product_id, tag) [100% SYNTHETIC/AUGMENTED]
+Builds the CATEGORY hierarchy, PRODUCT catalog, and PRODUCT_TAG keywords
+from Olist's products + translations CSVs.
 """
 import csv
 import statistics
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any, Optional
 
-# 9 Canonical L1 Root Categories (parent_category_id is NULL)
+# The 9 top-level root categories
 L1_ROOT_CATEGORIES = [
     (1, "Electronics & Appliances"),
     (2, "Home & Furniture"),
@@ -23,13 +20,13 @@ L1_ROOT_CATEGORIES = [
     (9, "Stationery, Gifts & Misc"),
 ]
 
-# Manual translations for the 2 missing categories in Olist translation file
+# Two categories Olist's translation file is missing
 MANUAL_TRANSLATIONS = {
     "pc_gamer": "PC Gaming",
     "portateis_cozinha_e_preparadores_de_alimentos": "Kitchen & Food Appliances"
 }
 
-# Mapping of Portuguese / English category slugs to parent L1 Category ID
+# Which root category each subcategory slug belongs under
 L2_TO_L1_PARENT_MAP = {
     # 1. Electronics & Appliances
     "audio": 1, "cinem_photo": 1, "cine_photo": 1, "cine_foto": 1, "computers": 1, "pcs": 1,
@@ -101,7 +98,7 @@ L2_TO_L1_PARENT_MAP = {
 }
 
 def format_category_display_name(english_slug: str) -> str:
-    """Formats an English category slug into Title Case format."""
+    """Turn an English slug like 'home_appliances' into 'Home Appliances'."""
     words = english_slug.replace("_", " ").split()
     return " ".join([w.capitalize() if w.lower() not in ["and", "e", "de", "of", "&"] else "&" for w in words])
 
@@ -110,9 +107,8 @@ def build_category_hierarchy(
     raw_products_path: str
 ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
     """
-    Dynamically builds the category hierarchy from source translations and distinct product categories.
-    Returns:
-        (category_records, portuguese_slug_to_category_id)
+    Build the 2-level category tree (9 roots + subcategories + 1 fallback).
+    Returns (category_records, slug_to_id_map).
     """
     # 1. Load translations (using utf-8-sig to strip potential UTF-8 BOM)
     translations: Dict[str, str] = {}
@@ -175,9 +171,7 @@ def transform_catalog(
     raw_translations_path: str
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Transforms CATEGORY, PRODUCT, and PRODUCT_TAG.
-    Returns:
-        (category_records, product_records, product_tag_records)
+    Main entry point — returns (categories, products, tags).
     """
     # 1. Build category hierarchy
     category_records, port_to_cat_id = build_category_hierarchy(raw_translations_path, raw_products_path)
