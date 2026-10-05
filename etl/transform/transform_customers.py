@@ -1,16 +1,13 @@
 """
-Transform Customers, Customer Phone, and Address entities.
-Canonical Target Tables:
-- CUSTOMER (customer_id = customer_unique_id)
-- CUSTOMER_PHONE (Composite PK: customer_id, phone_number) [100% SYNTHETIC/AUGMENTED]
-- ADDRESS (Composite PK: customer_id, address_type) [DIRECT/DERIVED/SYNTHETIC STREET]
+Transforms raw Olist customer data into CUSTOMER, CUSTOMER_PHONE, and ADDRESS records.
+Phones, emails, names, and street addresses are generated deterministically.
 """
 import csv
 import hashlib
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any
 
-# Standard Brazilian State DDD area codes for phone number synthesis
+# Brazilian DDD area codes by state (for generating phone numbers)
 STATE_DDD_MAP = {
     "SP": "11", "RJ": "21", "ES": "27", "MG": "31", "PR": "41", "SC": "48", "RS": "51",
     "MS": "67", "MT": "65", "GO": "62", "DF": "61", "BA": "71", "SE": "79", "AL": "82",
@@ -34,7 +31,7 @@ LAST_NAMES = [
 ]
 
 def generate_deterministic_name(uid: str) -> str:
-    """Deterministically generates a Brazilian human name from customer_unique_id hash."""
+    """Pick a Brazilian-style name from the hash of the customer ID."""
     h = int(hashlib.md5(uid.encode("utf-8")).hexdigest(), 16)
     fn = FIRST_NAMES[h % len(FIRST_NAMES)]
     ln1 = LAST_NAMES[(h // len(FIRST_NAMES)) % len(LAST_NAMES)]
@@ -42,14 +39,14 @@ def generate_deterministic_name(uid: str) -> str:
     return f"{fn} {ln1} {ln2}" if ln1 != ln2 else f"{fn} {ln1} Silveira"
 
 def generate_deterministic_phone(uid: str, state: str) -> str:
-    """Deterministically synthesizes an E.164 Brazilian mobile phone number (+55 <DDD> 9<8-digits>)."""
+    """Generate a fake Brazilian mobile number based on the customer's state."""
     ddd = STATE_DDD_MAP.get(state.upper(), "11")
     h = int(hashlib.md5(f"phone_{uid}".encode("utf-8")).hexdigest()[:8], 16)
     num_part = str(h % 100000000).zfill(8)
     return f"+55{ddd}9{num_part}"
 
 def generate_deterministic_street(uid: str) -> str:
-    """Generates an honest synthetic street address acknowledging lack of street in Olist."""
+    """Make up a street address (Olist doesn't include real street data)."""
     h = int(hashlib.md5(f"street_{uid}".encode("utf-8")).hexdigest()[:6], 16)
     prefix = uid[:6].upper()
     suite = (h % 900) + 100
@@ -60,9 +57,8 @@ def transform_customers_and_addresses(
     raw_orders_path: str
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Extracts and transforms CUSTOMER, CUSTOMER_PHONE, and ADDRESS.
-    Returns:
-        (customers_records, customer_phone_records, address_records)
+    Build all three customer-related tables.
+    Returns (customer_records, phone_records, address_records).
     """
     # 1. Map raw order dates to customer tokens
     # customer_id (order token) -> {earliest_date, latest_date}
