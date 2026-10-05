@@ -1,1 +1,1 @@
-"""Validation package for Phase 3 ETL."""
+"""Pre-load and post-load validation checks (27 total)."""
