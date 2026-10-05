@@ -26,14 +26,14 @@ def transform_orders_and_items(
     """
     Returns (order_records, order_item_records).
     """
-    # 1. Map raw customer_id (order token) -> customer_unique_id (master customer entity)
+    # Map order customer tokens to actual customer IDs
     cust_token_to_unique: Dict[str, str] = {}
     with open(raw_customers_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             cust_token_to_unique[r["customer_id"].strip()] = r["customer_unique_id"].strip()
 
-    # 2. Read and transform ORDERS
+    # Transform orders
     order_records: List[Dict[str, Any]] = []
     valid_order_ids = set()
 
@@ -56,10 +56,7 @@ def transform_orders_and_items(
             })
             valid_order_ids.add(oid)
 
-    # 3. Read and aggregate ORDER_ITEM
-    # Group by (order_id, product_id)
-    # quantity = COUNT(*)
-    # price_at_purchase = MIN(price)
+    # Group items by (order_id, product_id) for composite PK
     grouped_items: Dict[Tuple[str, str], Dict[str, Any]] = {}
 
     with open(raw_items_path, "r", encoding="utf-8") as f:

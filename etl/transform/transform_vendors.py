@@ -14,14 +14,14 @@ def transform_vendors(
     raw_reviews_path: str
 ) -> List[Dict[str, Any]]:
     """Returns a list of vendor record dicts."""
-    # 1. Map order_id -> set of seller_ids
+    # Map order to seller IDs
     order_to_sellers: Dict[str, set] = defaultdict(set)
     with open(raw_items_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             order_to_sellers[r["order_id"]].add(r["seller_id"])
 
-    # 2. Map seller_id -> list of review scores
+    # Collect review scores per seller
     seller_review_scores: Dict[str, List[float]] = defaultdict(list)
     with open(raw_reviews_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -36,7 +36,7 @@ def transform_vendors(
                 except ValueError:
                     pass
 
-    # 3. Read sellers dataset and build VENDOR records
+    # Build vendor rows
     vendor_records: List[Dict[str, Any]] = []
     seen_gst_numbers = set()
 
@@ -63,7 +63,7 @@ def transform_vendors(
             h = hashlib.md5(f"gst_{sid}".encode("utf-8")).hexdigest()[:8].upper()
             gst_number = f"GST-{state}-{h}"
             
-            # Ensure 100% uniqueness
+            # If duplicate, hash with sha256 instead
             if gst_number in seen_gst_numbers:
                 h_alt = hashlib.sha256(f"gst_{sid}".encode("utf-8")).hexdigest()[:8].upper()
                 gst_number = f"GST-{state}-{h_alt}"

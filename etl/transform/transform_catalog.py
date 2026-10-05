@@ -110,7 +110,7 @@ def build_category_hierarchy(
     Build the 2-level category tree (9 roots + subcategories + 1 fallback).
     Returns (category_records, slug_to_id_map).
     """
-    # 1. Load translations (using utf-8-sig to strip potential UTF-8 BOM)
+    # Load translations (utf-8-sig handles BOM if present)
     translations: Dict[str, str] = {}
     with open(raw_translations_path, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
@@ -123,7 +123,7 @@ def build_category_hierarchy(
     for k, v in MANUAL_TRANSLATIONS.items():
         translations[k] = v
 
-    # 2. Stage 1: Add 9 L1 Root Categories
+    # Root categories
     category_records: List[Dict[str, Any]] = []
     for cid, cname in L1_ROOT_CATEGORIES:
         category_records.append({
@@ -132,11 +132,11 @@ def build_category_hierarchy(
             "parent_category_id": None
         })
 
-    # 3. Stage 2: Add L2 Subcategories from source translations
+    # Subcategories
     port_to_cat_id: Dict[str, int] = {}
     next_id = 10
     
-    # Sort for deterministic ID assignment
+    # Sort so IDs stay deterministic
     sorted_slugs = sorted(translations.keys())
     for port_slug in sorted_slugs:
         eng_raw = translations[port_slug]
@@ -151,7 +151,7 @@ def build_category_hierarchy(
         port_to_cat_id[port_slug] = next_id
         next_id += 1
 
-    # 4. Fallback Category for NULL category products
+    # Fallback category for products without one
     fallback_cat_id = next_id
     fallback_name = "General Merchandise / Uncategorized"
     category_records.append({
@@ -173,20 +173,18 @@ def transform_catalog(
     """
     Main entry point — returns (categories, products, tags).
     """
-    # 1. Build category hierarchy
+    # Build categories
     category_records, port_to_cat_id = build_category_hierarchy(raw_translations_path, raw_products_path)
     cat_id_to_name = {c["category_id"]: c["category_name"] for c in category_records}
 
-    # 2. Read raw orders to get order purchase timestamps
+    # Read order timestamps
     order_timestamps: Dict[str, str] = {}
     with open(raw_orders_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             order_timestamps[r["order_id"]] = r["order_purchase_timestamp"]
 
-    # 3. Read raw order items to compute:
-    #   a) Product historical sales per seller (for 3-tier vendor ranking)
-    #   b) Product historical unit prices (for median catalog price derivation)
+    # Track sales volume and prices from order items
     product_seller_stats: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(
         lambda: defaultdict(lambda: {"volume": 0, "earliest_ts": "9999-99-99 99:99:99"})
     )
@@ -209,7 +207,7 @@ def transform_catalog(
             product_historical_prices[pid].append(price)
             product_sales_volume[pid] += 1
 
-    # 4. Resolve primary vendor for all products (Rank 1 from canonical 3-tier rule)
+    # Pick primary vendor (most sales, earliest sale, or lower ID)
     product_primary_vendor: Dict[str, str] = {}
     for pid, sellers_map in product_seller_stats.items():
         # Sort by: 1. volume DESC, 2. earliest_ts ASC, 3. seller_id ASC
@@ -219,7 +217,7 @@ def transform_catalog(
         )
         product_primary_vendor[pid] = sorted_candidates[0][0]
 
-    # 5. Read products dataset and build PRODUCT and PRODUCT_TAG records
+    # Build product and tag rows
     product_records: List[Dict[str, Any]] = []
     product_tag_records: List[Dict[str, Any]] = []
 
@@ -231,14 +229,14 @@ def transform_catalog(
             cat_id = port_to_cat_id.get(raw_cat, port_to_cat_id[""])
             cat_name = cat_id_to_name.get(cat_id, "General Merchandise")
 
-            # Catalog Price = Median historical price (or fallback if product had no items)
+            # Use median historical price, fallback to 100.00
             prices = product_historical_prices.get(pid, [100.00])
             catalog_price = round(statistics.median(prices), 2)
 
             # Primary Vendor
             vendor_id = product_primary_vendor.get(pid)
             if not vendor_id:
-                # Should not happen in Olist data, but safely resolve to first seller if catalog-only
+                # Fallback to first seller if none found
                 vendor_id = "0015a82c2db000afd65372437fb4f079"
 
             # Product Name & Description
@@ -262,7 +260,7 @@ def transform_catalog(
                 "status": "Active"
             })
 
-            # 6. Generate Deterministic PRODUCT_TAG records
+            # Generate tags
             tags = set()
             # Category keyword tag
             first_cat_token = cat_name.lower().replace("&", "").split()[0]

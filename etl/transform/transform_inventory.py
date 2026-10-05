@@ -39,17 +39,17 @@ def transform_warehouses_and_inventory(
     """
     Build warehouse + inventory records. Returns (warehouses, inventory).
     """
-    # 1. Warehouse records
+    # Warehouse rows
     warehouse_records = list(WAREHOUSES)
 
-    # 2. Seller ID -> State
+    # Map seller ID to state
     seller_states: Dict[str, str] = {}
     with open(raw_sellers_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             seller_states[r["seller_id"].strip()] = r["seller_state"].strip().upper()
 
-    # 3. Product sales volume and latest date from items/orders
+    # Sales volume and latest dates from orders
     order_dates: Dict[str, str] = {}
     with open(raw_orders_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -69,7 +69,7 @@ def transform_warehouses_and_inventory(
             if pid not in product_latest_date or dt > product_latest_date[pid]:
                 product_latest_date[pid] = dt
 
-    # 4. Generate INVENTORY records
+    # Generate inventory rows
     inventory_records: List[Dict[str, Any]] = []
     seen_inventory_pks = set()
 
@@ -95,7 +95,7 @@ def transform_warehouses_and_inventory(
                 continue
             seen_inventory_pks.add(pk)
 
-            # Deterministic Stock and Reorder Level calculations
+            # Stock based on sales (min 50) and reorder level (min 10)
             stock_qty = max(int(round(total_sales * 1.5)), 50)
             reorder_lvl = max(int(round(stock_qty * 0.20)), 10)
 

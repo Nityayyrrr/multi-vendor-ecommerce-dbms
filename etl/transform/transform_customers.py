@@ -60,8 +60,7 @@ def transform_customers_and_addresses(
     Build all three customer-related tables.
     Returns (customer_records, phone_records, address_records).
     """
-    # 1. Map raw order dates to customer tokens
-    # customer_id (order token) -> {earliest_date, latest_date}
+    # Map order dates to customer tokens
     cust_token_to_unique: Dict[str, str] = {}
     unique_cust_orders: Dict[str, List[str]] = defaultdict(list)
     
@@ -93,8 +92,7 @@ def transform_customers_and_addresses(
                 if uid not in cust_latest_order_token or dt > cust_latest_order_token[uid][0]:
                     cust_latest_order_token[uid] = (dt, cid)
 
-    # 2. Build unique CUSTOMER entities
-    # For address data, we prioritize the latest order token's address
+    # Build unique customers, using the latest address we saw
     unique_customers: Dict[str, Dict[str, Any]] = {}
     for row in raw_cust_rows:
         cid = row["customer_id"]
@@ -120,7 +118,7 @@ def transform_customers_and_addresses(
         email = f"customer_{uid[:12]}@ecommerce-demo.com"
         name = generate_deterministic_name(uid)
         
-        # 1. CUSTOMER record
+        # Customer
         customer_records.append({
             "customer_id": uid,
             "name": name,
@@ -128,7 +126,7 @@ def transform_customers_and_addresses(
             "join_date": join_date
         })
 
-        # 2. CUSTOMER_PHONE record (100% Synthetic/Augmented)
+        # Phone
         phone_number = generate_deterministic_phone(uid, cdata["state"])
         phone_records.append({
             "customer_id": uid,
@@ -136,7 +134,7 @@ def transform_customers_and_addresses(
             "phone_type": "Mobile"
         })
 
-        # 3. ADDRESS record
+        # Address
         street = generate_deterministic_street(uid)
         pincode = f"{cdata['zip_code_prefix']}-000"
         address_records.append({

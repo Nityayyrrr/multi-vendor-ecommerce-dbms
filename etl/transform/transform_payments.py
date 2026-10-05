@@ -15,7 +15,7 @@ def transform_payments(
     """
     Returns (payment_records, list_of_sanitized_zero_payments).
     """
-    # 1. Map order_id -> {payment_date, status}
+    # Map order ID to date and status
     order_info: Dict[str, Dict[str, str]] = {}
     with open(raw_orders_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -30,7 +30,7 @@ def transform_payments(
                 "order_status": status
             }
 
-    # 2. Read and transform PAYMENT records
+    # Build payment rows
     payment_records: List[Dict[str, Any]] = []
     sanitized_logs: List[Dict[str, Any]] = []
     seen_txn_refs = set()
@@ -43,7 +43,7 @@ def transform_payments(
             raw_val = float(r["payment_value"].strip())
             mode = r["payment_type"].strip()
 
-            # Sanitize 0.00 payments to 0.01 to meet target schema check constraint `chk_payment_amount: amount > 0.00`
+            # Bump 0.00 to 0.01 so it passes amount > 0 check constraint
             if raw_val <= 0.00:
                 amount = 0.01
                 sanitized_logs.append({
@@ -52,12 +52,12 @@ def transform_payments(
                     "original_value": raw_val,
                     "sanitized_value": amount,
                     "mode": mode,
-                    "reason": "Sanitized to 0.01 to satisfy MySQL check constraint chk_payment_amount (amount > 0.00)"
+                    "reason": "Bumped to 0.01 to satisfy chk_payment_amount"
                 })
             else:
                 amount = raw_val
 
-            # Payment Date and Status
+            # Date and status
             o_data = order_info.get(oid, {"payment_date": "2018-01-01 00:00:00", "order_status": "delivered"})
             p_date = o_data["payment_date"]
             if o_data["order_status"] == "canceled" and mode == "voucher":
@@ -65,7 +65,7 @@ def transform_payments(
             else:
                 p_status = "Success"
 
-            # Deterministic unique transaction reference
+            # Transaction reference
             h = hashlib.md5(f"txn_{oid}_{seq}".encode("utf-8")).hexdigest()[:16].upper()
             txn_ref = f"TXN-{h}"
             if txn_ref in seen_txn_refs:
