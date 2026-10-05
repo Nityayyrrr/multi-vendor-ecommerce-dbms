@@ -1,1 +1,1 @@
-"""Load package for Phase 3 ETL."""
+"""Database loading utilities (connection + batch inserter)."""
