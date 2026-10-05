@@ -1,7 +1,5 @@
 """
-Master Transformation Pipeline Orchestrator.
-Extracts raw data from `data/raw/`, applies canonical transformation rules,
-and stages normalized intermediate CSVs in `data/processed/`.
+Runs all the transform modules in order, saves CSVs to data/processed/.
 """
 import csv
 import os
@@ -18,7 +16,7 @@ from etl.transform.transform_orders import transform_orders_and_items
 from etl.transform.transform_payments import transform_payments
 
 def save_to_csv(data: List[Dict[str, Any]], filepath: Path, fieldnames: List[str]) -> int:
-    """Saves a list of dictionaries to a CSV file."""
+    """Write a list of dicts to a CSV."""
     filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -28,7 +26,7 @@ def save_to_csv(data: List[Dict[str, Any]], filepath: Path, fieldnames: List[str
 
 def run_transformation_pipeline() -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any]]:
     """
-    Executes all transformation stages, exports CSVs to `data/processed/`, and returns dataset dict + metrics.
+    Run every transform step, save the output CSVs, and return the data + summary metrics.
     """
     start_time = time.time()
     print("=================================================================")
