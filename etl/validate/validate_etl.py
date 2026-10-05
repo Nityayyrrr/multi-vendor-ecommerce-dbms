@@ -30,9 +30,7 @@ EXPECTED_ROW_COUNTS = {
 
 def validate_dry_run_csvs() -> Tuple[bool, List[str]]:
     """Run all 27 checks against the CSV files in data/processed/."""
-    print("================================================================================")
-    print("PRE-LOAD DRY RUN VALIDATION SUITE: 27 INTEGRITY CHECKS (data/processed/)")
-    print("================================================================================")
+    print("Running 27 pre-load integrity checks on processed CSVs...")
     errors = []
     
     # Load CSVs into memory
@@ -287,23 +285,19 @@ def validate_dry_run_csvs() -> Tuple[bool, List[str]]:
         errors.append("Check 27 Failed: Payment PK duplication, non-positive amount, duplicate txn ref, or orphan order")
         print("  [FAIL] Check 27: Payment validation failure")
 
-    print("================================================================================")
     if not errors:
-        print("ALL 27 PRE-LOAD DRY RUN CHECKS PASSED: 100% RELATIONAL & DOMAIN INTEGRITY")
-        print("================================================================================\n")
+        print("All 27 pre-load checks passed.\n")
         return True, []
     else:
-        print(f"DRY RUN FAILED WITH {len(errors)} ERRORS:")
+        print(f"Pre-load validation failed with {len(errors)} error(s):")
         for err in errors:
             print(f"  - {err}")
-        print("================================================================================\n")
+        print()
         return False, errors
 
 def validate_mysql_database(connection) -> Tuple[bool, List[str]]:
     """Run all 27 checks against the live MySQL database."""
-    print("================================================================================")
-    print("POST-LOAD LIVE MYSQL DATABASE VALIDATION: 27 CHECKS (multivendor_ecommerce_db)")
-    print("================================================================================")
+    print("Running 27 live database integrity checks...")
     errors = []
     
     with connection.cursor() as cur:
@@ -591,16 +585,14 @@ def validate_mysql_database(connection) -> Tuple[bool, List[str]]:
             errors.append("Check 27: Payment validation failure")
             print("  [FAIL] Check 27: Payment validation failure")
 
-    print("================================================================================")
     if not errors:
-        print("ALL 27 LIVE MYSQL DATABASE CHECKS PASSED SUCCESSFULLY!")
-        print("================================================================================\n")
+        print("All 27 live database checks passed.\n")
         return True, []
     else:
-        print(f"LIVE VALIDATION FAILED WITH {len(errors)} ERRORS:")
+        print(f"Database validation failed with {len(errors)} error(s):")
         for err in errors:
             print(f"  - {err}")
-        print("================================================================================\n")
+        print()
         return False, errors
 
 if __name__ == "__main__":

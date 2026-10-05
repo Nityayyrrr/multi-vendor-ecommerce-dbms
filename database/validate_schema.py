@@ -7,9 +7,7 @@ import os
 import sys
 
 def validate_sql_files(database_dir):
-    print("=================================================================")
-    print("STATIC SCHEMA VALIDATION SUITE: MULTI-VENDOR E-COMMERCE DBMS")
-    print("=================================================================")
+    print("Running static schema checks...")
     
     files = [
         "01_create_database.sql",
@@ -48,7 +46,7 @@ def validate_sql_files(database_dir):
         "orders", "order_item", "payment"
     ]
     
-    print("\n--- 1. Validating Table Entities ---")
+    print("\nChecking table definitions...")
     created_tables = re.findall(r"CREATE\s+TABLE\s+[`]?([a-zA-Z0-9_]+)[`]?", tables_sql, re.IGNORECASE)
     print(f"Discovered {len(created_tables)} tables in 02_create_tables.sql:")
     for t in created_tables:
@@ -59,9 +57,9 @@ def validate_sql_files(database_dir):
         print(f"  Missing: {set(expected_tables) - set(created_tables)}")
         print(f"  Unexpected: {set(created_tables) - set(expected_tables)}")
         return False
-    print("  [PASS] Exactly 12 canonical tables defined with zero unauthorized entities.")
+    print("  [PASS] All 12 tables defined correctly.")
 
-    print("\n--- 2. Validating Primary Keys & Composite Keys ---")
+    print("\nChecking primary and composite keys...")
     expected_pks = {
         "customer": ["customer_id"],
         "vendor": ["vendor_id"],
@@ -98,7 +96,7 @@ def validate_sql_files(database_dir):
             print(f"  [FAIL] Table '{tbl}': Could not parse table definition.")
             return False
 
-    print("\n--- 3. Validating Foreign Key Relationships ---")
+    print("\nChecking foreign keys...")
     expected_fks = [
         ("category", "parent_category_id", "category", "category_id"),
         ("product", "category_id", "category", "category_id"),
@@ -122,7 +120,7 @@ def validate_sql_files(database_dir):
             print(f"  [FAIL] Missing FK: {c_tbl}({c_col}) -> {p_tbl}({p_col})")
             return False
 
-    print("\n--- 4. Validating UNIQUE Constraints ---")
+    print("\nChecking unique constraints...")
     expected_uniques = [
         ("customer", "email"),
         ("vendor", "gst_number"),
@@ -137,7 +135,7 @@ def validate_sql_files(database_dir):
             print(f"  [FAIL] Missing UNIQUE constraint on {tbl}.{col}")
             return False
 
-    print("\n--- 5. Validating CHECK Constraints ---")
+    print("\nChecking check constraints...")
     check_constraints = [
         "chk_customer_email_format",
         "chk_customer_join_date",
@@ -167,9 +165,7 @@ def validate_sql_files(database_dir):
             print(f"  [FAIL] Missing CHECK constraint: {chk}")
             return False
 
-    print("\n=================================================================")
-    print("ALL STATIC CHECKS PASSED: 100% RELATIONAL & DOMAIN INTEGRITY")
-    print("=================================================================")
+    print("\nAll static schema checks passed.")
     return True
 
 if __name__ == "__main__":
