@@ -1,15 +1,8 @@
 """
-Transform Payment Entity.
-Canonical Target Table:
-- PAYMENT (Composite PK: order_id, payment_id, FK -> orders)
-Attributes:
-- order_id: DIRECT (FK -> orders.order_id)
-- payment_id: DIRECT (payment_sequential)
-- amount: DERIVED (payment_value; 9 zero-values explicitly sanitized to 0.01)
-- mode: DERIVED (payment_type)
-- status: DERIVED ('Success' / 'Refunded')
-- payment_date: DERIVED (order_approved_at / order_purchase_timestamp)
-- transaction_reference: SYNTHETIC/AUGMENTED (deterministic unique MD5 string)
+Builds the PAYMENT table from Olist's order_payments CSV.
+The 9 zero-value payments get bumped to 0.01 so they pass the
+check constraint (amount > 0.00). Each payment gets a unique
+transaction reference hash.
 """
 import csv
 import hashlib
@@ -20,9 +13,7 @@ def transform_payments(
     raw_orders_path: str
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Transforms raw payments dataset into canonical PAYMENT records.
-    Returns:
-        (payment_records, sanitized_zero_payment_logs)
+    Returns (payment_records, list_of_sanitized_zero_payments).
     """
     # 1. Map order_id -> {payment_date, status}
     order_info: Dict[str, Dict[str, str]] = {}
