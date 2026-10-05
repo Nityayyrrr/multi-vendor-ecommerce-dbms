@@ -1,5 +1,4 @@
-# Third-Party Dependencies for Multi-Vendor E-Commerce DBMS
-# Derived strictly from project imports in etl/load/db_connection.py and etl/config.py
+# Python packages needed for the ETL pipeline
 
 pymysql>=1.1.0
 python-dotenv>=1.0.0
