@@ -1,6 +1,6 @@
 """
-Static Schema Validation Script for Multi-Vendor E-Commerce DBMS
-Validates SQL files against the canonical 12-table ER architecture.
+Checks that the SQL scripts define all 12 expected tables,
+their primary keys, foreign keys, unique constraints, and check constraints.
 """
 import re
 import os
