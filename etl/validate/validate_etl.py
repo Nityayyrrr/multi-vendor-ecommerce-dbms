@@ -1,8 +1,5 @@
 """
-Validation Suite for Phase 3 ETL.
-Provides explicit 1-to-27 granular verification across both:
-1. Pre-Load Dry Run Validation (validates intermediate CSV files in data/processed/)
-2. Post-Load Live Database Validation (executes 27 SQL verification checks against MySQL 8.4)
+27-check validation for the processed CSVs (dry run) and the live MySQL database.
 """
 import csv
 import os
@@ -32,9 +29,7 @@ EXPECTED_ROW_COUNTS = {
 }
 
 def validate_dry_run_csvs() -> Tuple[bool, List[str]]:
-    """
-    Executes the complete 27-check pre-load validation suite on processed CSV files.
-    """
+    """Run all 27 checks against the CSV files in data/processed/."""
     print("================================================================================")
     print("PRE-LOAD DRY RUN VALIDATION SUITE: 27 INTEGRITY CHECKS (data/processed/)")
     print("================================================================================")
@@ -305,9 +300,7 @@ def validate_dry_run_csvs() -> Tuple[bool, List[str]]:
         return False, errors
 
 def validate_mysql_database(connection) -> Tuple[bool, List[str]]:
-    """
-    Executes the complete 27-check live database verification suite against MySQL 8.4.
-    """
+    """Run all 27 checks against the live MySQL database."""
     print("================================================================================")
     print("POST-LOAD LIVE MYSQL DATABASE VALIDATION: 27 CHECKS (multivendor_ecommerce_db)")
     print("================================================================================")
