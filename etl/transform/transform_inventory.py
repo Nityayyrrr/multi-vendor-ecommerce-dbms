@@ -1,14 +1,12 @@
 """
-Transform Logistics Entities: WAREHOUSE and INVENTORY.
-Canonical Target Tables:
-- WAREHOUSE (Surrogate PK: warehouse_id) [100% SYNTHETIC/AUGMENTED]
-- INVENTORY (Composite PK: product_id, warehouse_id) [100% SYNTHETIC/AUGMENTED]
+Generates the WAREHOUSE and INVENTORY tables.
+Both are fully synthetic — Olist has no warehouse/stock data.
 """
 import csv
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any
 
-# 8 Canonical Regional Logistics Hubs
+# 8 made-up warehouse locations across Brazil
 WAREHOUSES = [
     {"warehouse_id": 1, "location": "São Paulo Central Hub (SP)", "capacity": 1000000},
     {"warehouse_id": 2, "location": "Campinas Logistics Park (SP)", "capacity": 750000},
@@ -20,7 +18,7 @@ WAREHOUSES = [
     {"warehouse_id": 8, "location": "Brasília Central Hub (DF)", "capacity": 300000},
 ]
 
-# Mapping Brazilian state to regional warehouse ID
+# Which warehouse each state ships from
 STATE_TO_WAREHOUSE_MAP = {
     "SP": 1,
     "RJ": 3,
@@ -39,9 +37,7 @@ def transform_warehouses_and_inventory(
     raw_orders_path: str
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Transforms WAREHOUSE and INVENTORY.
-    Returns:
-        (warehouse_records, inventory_records)
+    Build warehouse + inventory records. Returns (warehouses, inventory).
     """
     # 1. Warehouse records
     warehouse_records = list(WAREHOUSES)
