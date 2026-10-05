@@ -1,8 +1,7 @@
 # Phase 3 ETL Pipeline Documentation
 ## Multi-Vendor E-Commerce & Inventory Management System
 
-### 1. Overview
-This directory contains the Python-based ETL (Extract, Transform, Load) and validation pipeline for Phase 3 of the Multi-Vendor E-Commerce DBMS project. The pipeline transforms the 9 raw immutable Olist CSV datasets located in `data/raw/` into the canonical 12-table relational schema for MySQL 8.4 (`multivendor_ecommerce_db`).
+This directory contains the Python-based ETL (Extract, Transform, Load) pipeline for Phase 3 of the project. It takes the 9 raw Olist CSV files in `data/raw/` and transforms them into 12 clean CSVs in `data/processed/`, then loads them into MySQL (`multivendor_ecommerce_db`).
 
 ---
 
@@ -10,7 +9,7 @@ This directory contains the Python-based ETL (Extract, Transform, Load) and vali
 
 ```
 etl/
-├── README.md                      # Comprehensive ETL pipeline documentation
+├── README.md                      # This file
 ├── config.py                      # Database credentials and filesystem paths configuration
 ├── run_etl.py                     # Master CLI entry point (Extract, Dry-Run, Load, Validate)
 ├── transform/
@@ -21,11 +20,11 @@ etl/
 │   ├── transform_inventory.py     # Transforms WAREHOUSE (8 regional hubs), INVENTORY
 │   ├── transform_orders.py        # Transforms ORDERS (canonical unique_id), ORDER_ITEM (deduped & aggregated)
 │   ├── transform_payments.py      # Transforms PAYMENT (sanitized zero-amounts, sequential PK)
-│   └── pipeline.py                # Master transformation orchestrator
+│   └── pipeline.py                # Runs the transform steps in order
 ├── load/
 │   ├── __init__.py
-│   ├── db_connection.py           # PyMySQL connection manager (transactions & DDL execution)
-│   └── loader.py                  # 13-stage topological MySQL batch loader (Zero INSERT IGNORE)
+│   ├── db_connection.py           # PyMySQL connection helper and DDL runner
+│   └── loader.py                  # 13-stage batch loader into MySQL
 └── validate/
     ├── __init__.py
     └── validate_etl.py            # Automated 27-check validation suite (Dry-run & Live MySQL)
@@ -33,7 +32,7 @@ etl/
 
 ---
 
-### 3. Canonical Transformation & Lineage Rules
+### 3. Transformation & Lineage Summary
 
 | Target Table | Target PK | Source Feeder | Lineage Classification | Transformation Rule Summary | Target Row Count |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -52,7 +51,7 @@ etl/
 
 ---
 
-### 4. 13-Stage Topological Population Sequence
+### 4. 13-Stage Loading Order
 
 To respect foreign-key dependencies without disabling foreign key checks during loading, data is populated across 13 stages:
 
