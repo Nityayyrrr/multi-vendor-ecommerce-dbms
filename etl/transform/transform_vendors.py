@@ -1,12 +1,7 @@
 """
-Transform Vendors entity.
-Canonical Target Table:
-- VENDOR (vendor_id = seller_id)
-Attributes:
-- vendor_id: DIRECT (seller_id)
-- vendor_name: SYNTHETIC/AUGMENTED (deterministic commercial merchant name)
-- rating: DERIVED (mathematical average of review scores linked to seller orders, default 5.00)
-- gst_number: SYNTHETIC/AUGMENTED (deterministic unique GST string GST-<STATE>-<HEX8>)
+Builds the VENDOR table from Olist sellers + reviews.
+Rating = average review score for that seller's orders (default 5.0).
+Vendor names and GST numbers are deterministically generated.
 """
 import csv
 import hashlib
@@ -18,9 +13,7 @@ def transform_vendors(
     raw_items_path: str,
     raw_reviews_path: str
 ) -> List[Dict[str, Any]]:
-    """
-    Transforms raw seller data, reviews, and items into canonical VENDOR records.
-    """
+    """Returns a list of vendor record dicts."""
     # 1. Map order_id -> set of seller_ids
     order_to_sellers: Dict[str, set] = defaultdict(set)
     with open(raw_items_path, "r", encoding="utf-8") as f:
