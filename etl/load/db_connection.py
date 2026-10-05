@@ -18,7 +18,7 @@ def initialize_database_schema(schema_sql_path: Optional[str] = None) -> bool:
     if schema_sql_path is None:
         schema_sql_path = str(DATABASE_DIR / "setup_database.sql")
 
-    print("--- Initializing MySQL 8.4 Database and Schema ---")
+    print("Initializing database and schema...")
     
     # Connect without a specific DB so we can CREATE DATABASE
     root_config = dict(DB_CONFIG)
@@ -46,5 +46,5 @@ def initialize_database_schema(schema_sql_path: Optional[str] = None) -> bool:
     conn.commit()
     conn.close()
 
-    print(f"  [OK] Successfully executed {len(statements)} DDL statements against `{DB_CONFIG['database']}`.")
+    print(f"  Executed {len(statements)} DDL statements against `{DB_CONFIG['database']}`")
     return True

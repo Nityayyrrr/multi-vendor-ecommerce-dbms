@@ -43,67 +43,65 @@ def load_table_in_batches(
 
     conn.commit()
     elapsed = round(time.time() - start_time, 2)
-    print(f"  [Stage {stage_num:02d} OK] {stage_desc:<35} Loaded {total_inserted:>7,} rows into `{table_name}` in {elapsed}s")
+    print(f"  Loaded {total_inserted:,} rows into {table_name} ({stage_desc}) in {elapsed}s")
     return total_inserted
 
 def execute_13_stage_load() -> Dict[str, int]:
     """Run all 13 load stages in FK-safe order and return the per-table row counts."""
-    print("=================================================================")
-    print("PHASE 3 ETL: 13-STAGE TOPOLOGICAL MYSQL 8.4 POPULATION")
-    print("=================================================================")
+    print("Loading data into MySQL tables...")
     total_start = time.time()
 
     conn = get_connection(autocommit=False)
     loaded_counts: Dict[str, int] = {}
 
     try:
-        # 1. Read processed CSV files
+        # read processed csv files
         tables_data: Dict[str, List[Dict[str, str]]] = {}
         for tbl, fpath in PROCESSED_FILES.items():
             with open(fpath, "r", encoding="utf-8") as f:
                 tables_data[tbl] = list(csv.DictReader(f))
 
-        # Stage 1: CUSTOMER
+        # customer
         cust_rows = [
             (r["customer_id"], r["name"], r["email"], r["join_date"])
             for r in tables_data["customer"]
         ]
         loaded_counts["customer"] = load_table_in_batches(
             conn, "customer", ["customer_id", "name", "email", "join_date"],
-            cust_rows, 1, "CUSTOMER Master Accounts"
+            cust_rows, 1, "customer accounts"
         )
 
-        # Stage 2: CUSTOMER_PHONE
+        # customer phone
         phone_rows = [
             (r["customer_id"], r["phone_number"], r["phone_type"])
             for r in tables_data["customer_phone"]
         ]
         loaded_counts["customer_phone"] = load_table_in_batches(
             conn, "customer_phone", ["customer_id", "phone_number", "phone_type"],
-            phone_rows, 2, "CUSTOMER_PHONE (Synthetic)"
+            phone_rows, 2, "customer phone numbers"
         )
 
-        # Stage 3: ADDRESS
+        # address
         addr_rows = [
             (r["customer_id"], r["address_type"], r["street"], r["city"], r["state"], r["pincode"], int(r["is_default"]))
             for r in tables_data["address"]
         ]
         loaded_counts["address"] = load_table_in_batches(
             conn, "address", ["customer_id", "address_type", "street", "city", "state", "pincode", "is_default"],
-            addr_rows, 3, "ADDRESS Delivery Entities"
+            addr_rows, 3, "customer addresses"
         )
 
-        # Stage 4: VENDOR
+        # vendor
         vendor_rows = [
             (r["vendor_id"], r["vendor_name"], float(r["rating"]), r["gst_number"])
             for r in tables_data["vendor"]
         ]
         loaded_counts["vendor"] = load_table_in_batches(
             conn, "vendor", ["vendor_id", "vendor_name", "rating", "gst_number"],
-            vendor_rows, 4, "VENDOR Marketplace Sellers"
+            vendor_rows, 4, "vendors"
         )
 
-        # Stage 5: CATEGORY (L1 root categories)
+        # category roots
         l1_cat_rows = [
             (int(r["category_id"]), r["category_name"], None)
             for r in tables_data["category"]
@@ -111,10 +109,10 @@ def execute_13_stage_load() -> Dict[str, int]:
         ]
         load_table_in_batches(
             conn, "category", ["category_id", "category_name", "parent_category_id"],
-            l1_cat_rows, 5, "CATEGORY (L1 Root Taxonomy)"
+            l1_cat_rows, 5, "root categories"
         )
 
-        # Stage 6: CATEGORY (L2 subcategories)
+        # category subcategories
         l2_cat_rows = [
             (int(r["category_id"]), r["category_name"], int(r["parent_category_id"]))
             for r in tables_data["category"]
@@ -122,84 +120,82 @@ def execute_13_stage_load() -> Dict[str, int]:
         ]
         load_table_in_batches(
             conn, "category", ["category_id", "category_name", "parent_category_id"],
-            l2_cat_rows, 6, "CATEGORY (L2 Child Subcategories)"
+            l2_cat_rows, 6, "subcategories"
         )
         loaded_counts["category"] = len(l1_cat_rows) + len(l2_cat_rows)
 
-        # Stage 7: WAREHOUSE
+        # warehouse
         wh_rows = [
             (int(r["warehouse_id"]), r["location"], int(r["capacity"]))
             for r in tables_data["warehouse"]
         ]
         loaded_counts["warehouse"] = load_table_in_batches(
             conn, "warehouse", ["warehouse_id", "location", "capacity"],
-            wh_rows, 7, "WAREHOUSE Regional Hubs"
+            wh_rows, 7, "warehouses"
         )
 
-        # Stage 8: PRODUCT
+        # product
         prod_rows = [
             (r["product_id"], r["product_name"], r["description"], float(r["price"]), int(r["category_id"]), r["vendor_id"], r["status"])
             for r in tables_data["product"]
         ]
         loaded_counts["product"] = load_table_in_batches(
             conn, "product", ["product_id", "product_name", "description", "price", "category_id", "vendor_id", "status"],
-            prod_rows, 8, "PRODUCT Platform Master Catalog"
+            prod_rows, 8, "product catalog"
         )
 
-        # Stage 9: PRODUCT_TAG
+        # product tag
         tag_rows = [
             (r["product_id"], r["tag"])
             for r in tables_data["product_tag"]
         ]
         loaded_counts["product_tag"] = load_table_in_batches(
             conn, "product_tag", ["product_id", "tag"],
-            tag_rows, 9, "PRODUCT_TAG Search Keywords"
+            tag_rows, 9, "product tags"
         )
 
-        # Stage 10: INVENTORY
+        # inventory
         inv_rows = [
             (r["product_id"], int(r["warehouse_id"]), int(r["stock_quantity"]), int(r["reorder_level"]), r["last_updated"])
             for r in tables_data["inventory"]
         ]
         loaded_counts["inventory"] = load_table_in_batches(
             conn, "inventory", ["product_id", "warehouse_id", "stock_quantity", "reorder_level", "last_updated"],
-            inv_rows, 10, "INVENTORY Stock & Reorder Levels"
+            inv_rows, 10, "inventory levels"
         )
 
-        # Stage 11: ORDERS
+        # orders
         order_rows = [
             (r["order_id"], r["customer_id"], r["order_date"], r["status"])
             for r in tables_data["orders"]
         ]
         loaded_counts["orders"] = load_table_in_batches(
             conn, "orders", ["order_id", "customer_id", "order_date", "status"],
-            order_rows, 11, "ORDERS Transaction Master"
+            order_rows, 11, "orders"
         )
 
-        # Stage 12: ORDER_ITEM
+        # order item
         item_rows = [
             (r["order_id"], r["product_id"], int(r["quantity"]), float(r["price_at_purchase"]))
             for r in tables_data["order_item"]
         ]
         loaded_counts["order_item"] = load_table_in_batches(
             conn, "order_item", ["order_id", "product_id", "quantity", "price_at_purchase"],
-            item_rows, 12, "ORDER_ITEM (Aggregated Pairs)"
+            item_rows, 12, "order items"
         )
 
-        # Stage 13: PAYMENT
+        # payment
         pay_rows = [
             (r["order_id"], int(r["payment_id"]), float(r["amount"]), r["mode"], r["status"], r["payment_date"], r["transaction_reference"])
             for r in tables_data["payment"]
         ]
         loaded_counts["payment"] = load_table_in_batches(
             conn, "payment", ["order_id", "payment_id", "amount", "mode", "status", "payment_date", "transaction_reference"],
-            pay_rows, 13, "PAYMENT Identifying Weak Entities"
+            pay_rows, 13, "payments"
         )
 
         total_elapsed = round(time.time() - total_start, 2)
-        print("=================================================================")
-        print(f"SUCCESS: ALL 13 STAGES LOADED IN {total_elapsed}s (Total Records: {sum(loaded_counts.values()):,})")
-        print("=================================================================\n")
+        print(f"\nLoaded all 12 tables in {total_elapsed}s ({sum(loaded_counts.values()):,} total rows).\n")
         return loaded_counts
 
     finally:
