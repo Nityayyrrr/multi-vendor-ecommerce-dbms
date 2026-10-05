@@ -1,7 +1,4 @@
-"""
-Database Connection and DDL Execution Manager for MySQL 8.4.
-Uses PyMySQL with explicit transaction controls and parameterized queries.
-"""
+"""Handles connecting to MySQL and running the schema DDL."""
 import os
 import pymysql
 from typing import Optional, Dict, Any
@@ -9,9 +6,7 @@ from typing import Optional, Dict, Any
 from etl.config import DB_CONFIG, DATABASE_DIR
 
 def get_connection(db_name: Optional[str] = None, autocommit: bool = False):
-    """
-    Establishes and returns a PyMySQL connection.
-    """
+    """Return a PyMySQL connection, optionally overriding the database name."""
     config = dict(DB_CONFIG)
     if db_name is not None:
         config["database"] = db_name
@@ -19,15 +14,13 @@ def get_connection(db_name: Optional[str] = None, autocommit: bool = False):
     return pymysql.connect(**config)
 
 def initialize_database_schema(schema_sql_path: Optional[str] = None) -> bool:
-    """
-    Creates database if not exists and executes setup_database.sql to establish canonical 12 tables.
-    """
+    """Create the database (if needed) and run setup_database.sql to build all 12 tables."""
     if schema_sql_path is None:
         schema_sql_path = str(DATABASE_DIR / "setup_database.sql")
 
     print("--- Initializing MySQL 8.4 Database and Schema ---")
     
-    # 1. Connect without specific DB to create database
+    # Connect without a specific DB so we can CREATE DATABASE
     root_config = dict(DB_CONFIG)
     root_config.pop("database", None)
     root_config["autocommit"] = True
@@ -37,15 +30,14 @@ def initialize_database_schema(schema_sql_path: Optional[str] = None) -> bool:
         cur.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_CONFIG['database']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
     conn.close()
 
-    # 2. Connect to the target DB and execute schema.sql statements
+    # Now connect to the actual DB and run the DDL
     conn = get_connection(autocommit=False)
     with open(schema_sql_path, "r", encoding="utf-8") as f:
         sql_script = f.read()
 
-    # Split SQL script on semicolon, preserving table definitions
     statements = [s.strip() for s in sql_script.split(";") if s.strip()]
     with conn.cursor() as cur:
-        # Disable foreign key checks for clean DDL execution
+        # Turn off FK checks while running DDL, then re-enable
         cur.execute("SET FOREIGN_KEY_CHECKS = 0;")
         for stmt in statements:
             if stmt:
