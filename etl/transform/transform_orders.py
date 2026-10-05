@@ -1,8 +1,7 @@
 """
-Transform Orders and Order Items Entities.
-Canonical Target Tables:
-- ORDERS (PK: order_id, FK -> customer(customer_id = customer_unique_id))
-- ORDER_ITEM (Composite PK: order_id, product_id, FKs -> ORDERS, PRODUCT)
+Transforms raw Olist orders into ORDERS and ORDER_ITEM tables.
+Order items with the same (order_id, product_id) get grouped into one row
+with a quantity count, so we can use a composite PK.
 """
 import csv
 from collections import defaultdict
@@ -25,9 +24,7 @@ def transform_orders_and_items(
     raw_items_path: str
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Transforms ORDERS and ORDER_ITEM.
-    Returns:
-        (order_records, order_item_records)
+    Returns (order_records, order_item_records).
     """
     # 1. Map raw customer_id (order token) -> customer_unique_id (master customer entity)
     cust_token_to_unique: Dict[str, str] = {}
