@@ -1,11 +1,7 @@
 """
-Master CLI Entry Point for Phase 3 ETL.
-Executes the full pipeline:
-1. Extract & Transform (data/raw/ -> data/processed/)
-2. Pre-Load Dry Run Validation
-3. MySQL 8.4 Schema Initialization (database/schema.sql)
-4. 13-Stage Topological Batch Loading
-5. Post-Load Live MySQL Validation Suite (27 checks)
+Main entry point for the ETL pipeline.
+Runs transform -> dry-run check -> schema init -> load -> validate,
+or a subset depending on the CLI flags.
 """
 import os
 import sys
