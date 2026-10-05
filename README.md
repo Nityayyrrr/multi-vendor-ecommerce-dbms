@@ -6,25 +6,25 @@ A relational database management system (DBMS) project modeling an online multi-
 
 ## 1. Project Overview
 
-Modern e-commerce platforms host thousands of independent vendors, millions of catalog products, dynamic inventory across regional fulfillment centers, customer delivery profiles, order transactions, and multi-mode payment settlements.
+Large e-commerce platforms like Amazon or Flipkart deal with thousands of vendors, large product catalogs, dynamic inventory across multiple warehouses, customer delivery profiles, orders, and split-payment transactions all at once.
 
-This project designs and implements a normalized, relational database architecture to manage:
-- Master customer accounts, multiple phone numbers, and addresses.
-- Marketplace seller/vendor profiles with review ratings and tax registration.
-- A multi-tier product catalog structured as a self-referencing category tree.
-- Multivalued search keywords/tags normalized in First Normal Form (1NF).
-- Multi-warehouse regional logistics hubs and real-time inventory tracking.
-- Order processing, line-item quantity/price preservation, and split-payment transactions.
+This project implements a normalized relational database in MySQL 8.4 to model that setup:
+- Customer accounts with multiple phone numbers and delivery/billing addresses.
+- Vendor profiles with review ratings and tax IDs.
+- A product catalog structured as a two-level category tree (using a self-referencing foreign key).
+- Product search tags normalized into 1NF.
+- Regional warehouse hubs with inventory tracking and reorder levels.
+- Order processing with line items (quantity and price preserved) and split payments.
 
 ---
 
 ## 2. Objectives
 
-1. **Relational Schema Design:** Implement a normalized (1NF $\rightarrow$ 2NF $\rightarrow$ 3NF / BCNF) relational schema consisting of 12 canonical tables in MySQL 8.4.
-2. **Real-World Source Grounding:** Ground the schema in real-world retail transactions using the Olist dataset (9 raw CSV files, ~1.45M total records).
-3. **Reproducible Python ETL Pipeline:** Implement an Extract, Transform, and Load (ETL) pipeline to clean, derive, augment, and stage data without modifying the raw source files.
-4. **Data Integrity & Consistency:** Enforce primary keys, composite keys, foreign keys with appropriate cascade/restrict actions, unique constraints, and domain check constraints.
-5. **Comprehensive Validation:** Validate the staged CSVs and live database using a 27-check automated test suite.
+1. **Relational Schema Design:** Design a normalized (up to 3NF / BCNF) schema with 12 tables in MySQL 8.4.
+2. **Real-World Dataset:** Base the schema on real retail data using the Brazilian Olist dataset (9 raw CSVs, ~1.45M records total).
+3. **Deterministic ETL Pipeline:** Build an ETL script in Python that cleans, transforms, and loads the data without touching the raw CSV files.
+4. **Data Integrity:** Enforce primary and composite keys, foreign keys (with proper cascade/restrict rules), unique constraints, and check constraints.
+5. **Automated Validation:** Verify everything with a 27-check test suite (runnable both against intermediate CSVs and the live MySQL database).
 
 ---
 
@@ -39,9 +39,9 @@ This project designs and implements a normalized, relational database architectu
 
 ---
 
-## 4. Database Architecture (12 Canonical Tables)
+## 4. Database Architecture (12 Tables)
 
-The database schema (`multivendor_ecommerce_db`) consists of 12 canonical tables organized across five logical domains:
+The schema (`multivendor_ecommerce_db`) consists of 12 tables covering customers, vendors, catalog, inventory, and orders:
 
 ```
                                ┌──────────────────────────┐
@@ -107,9 +107,9 @@ The database schema (`multivendor_ecommerce_db`) consists of 12 canonical tables
 
 The project uses the **Olist Brazilian E-Commerce Dataset** stored in `data/raw/` (immutable source files).
 
-### Source Data vs. Synthetic Augmentation
+### Source Data vs. Generated Data
 
-Because the raw Olist dataset represents a real-world snapshot, certain attributes required for a complete relational DBMS demonstration were either derived or synthetically generated:
+Since Olist is real transaction data from a single marketplace, a few fields needed for a full DBMS model (like warehouse stock levels or clean customer contact details) had to be derived or generated:
 
 1. **Direct Source Data:**
    - Real order UUIDs, purchase timestamps, delivery statuses (`orders.csv`).
@@ -129,7 +129,7 @@ Because the raw Olist dataset represents a real-world snapshot, certain attribut
    - `order_item`: Grouped by `(order_id, product_id)` to satisfy composite primary key uniqueness, conserving 100% of physical units (112,650 units across 102,425 pairs).
    - `payment.amount`: Sanitized 9 zero-value payments to 0.01 to meet domain check constraints (`amount > 0.00`).
 
-3. **Synthetic / Augmented Data (Clearly Declared for Demonstration):**
+3. **Generated / Augmented Data:**
    - Customer names and emails (generated deterministically from customer hash).
    - Customer phone numbers (generated with standard Brazilian state area codes / DDD).
    - Street names (synthetically formatted; Olist provides city, state, and zip prefix).
@@ -141,9 +141,9 @@ Because the raw Olist dataset represents a real-world snapshot, certain attribut
 
 ---
 
-## 6. ETL Pipeline & Loading Workflow
+## 6. ETL Pipeline & Loading Order
 
-The ETL pipeline converts raw immutable CSVs into normalized, dependency-safe relational data:
+The pipeline transforms the raw Olist CSVs into normalized tables and loads them into MySQL in foreign-key order:
 
 ```
   data/raw/ (9 Olist CSVs)
@@ -199,8 +199,8 @@ multi-vendor-ecommerce-dbms/
 │   ├── 02_create_tables.sql       # Table definitions for all 12 entities (Phase 1 modular)
 │   ├── 03_constraints.sql         # Primary keys, foreign keys, unique, and check constraints (Phase 1 modular)
 │   ├── 04_validation_queries.sql  # SQL queries to verify schema and constraints
-│   ├── schema.sql                 # Authoritative consolidated schema definition
-│   ├── setup_database.sql         # Non-destructive master database setup entry point
+│   ├── schema.sql                 # Complete schema definition script
+│   ├── setup_database.sql         # Database creation script (uses IF NOT EXISTS)
 │   └── validate_schema.py         # Static schema validation script
 │
 ├── documentation/
@@ -215,7 +215,7 @@ multi-vendor-ecommerce-dbms/
 │   │   └── loader.py              # 13-stage topological MySQL batch loader
 │   ├── transform/
 │   │   ├── __init__.py
-│   │   ├── pipeline.py            # Master transformation pipeline orchestrator
+│   │   ├── pipeline.py            # Transformation pipeline runner
 │   │   ├── transform_catalog.py   # Transforms CATEGORY, PRODUCT, and PRODUCT_TAG
 │   │   ├── transform_customers.py # Transforms CUSTOMER, CUSTOMER_PHONE, and ADDRESS
 │   │   ├── transform_inventory.py # Transforms WAREHOUSE and INVENTORY
@@ -227,7 +227,7 @@ multi-vendor-ecommerce-dbms/
 │   │   └── validate_etl.py        # 27-check validation suite (Dry-run & Live MySQL)
 │   ├── config.py                  # Configuration, directory paths, and database settings
 │   ├── README.md                  # ETL pipeline documentation
-│   └── run_etl.py                 # Master CLI runner
+│   └── run_etl.py                 # Main CLI runner
 │
 ├── .env.example                   # Template environment configuration
 ├── .gitignore                     # Git exclusion rules (credentials, cache, virtual environments)
@@ -237,9 +237,9 @@ multi-vendor-ecommerce-dbms/
 
 ---
 
-## 8. Running the Database Locally
+## 8. Running Locally
 
-This guide explains how to set up and populate `multivendor_ecommerce_db` on a fresh computer (Windows, macOS, or Linux).
+Here is how to set up and populate the database from scratch:
 
 ### Prerequisites
 - **MySQL Server 8.4** (or MySQL 8.0+) installed and running.
@@ -260,7 +260,7 @@ cd multi-vendor-ecommerce-dbms
 pip install -r requirements.txt
 ```
 
-*(The `requirements.txt` file contains only two genuine dependencies: `pymysql` for database connectivity and `python-dotenv` for reading environment variables.)*
+*(Only two external packages are needed: `pymysql` for MySQL connections and `python-dotenv` for reading `.env`.)*
 
 ---
 
@@ -313,19 +313,19 @@ If you run the ETL pipeline (Step 4), the script automatically executes the sche
 
 ---
 
-### Step 4: Populate Data via the ETL Pipeline
+### Step 4: Load Data with the ETL Pipeline
 
-Populate the database using the master Python ETL runner (`etl/run_etl.py`):
+Run the pipeline using `etl/run_etl.py`:
 
-#### Option 1: End-to-End Pipeline (Extract, Transform & Load)
-Reads the 9 raw Olist CSVs from `data/raw/`, applies all business transformations, performs a pre-load dry-run check, creates the schema, loads 778,244 records across 13 stages, and runs the live 27-check validation suite:
+#### Option 1: Full Pipeline (Transform + Load + Validate)
+Transforms the raw CSVs, runs dry-run checks, creates the schema, loads all 778,244 rows across the 13 stages, and validates the live database:
 
 ```powershell
 python -m etl.run_etl
 ```
 
-#### Option 2: Fast Reload (Skip Transformation)
-Directly batch-loads the 12 staged CSV files already present in `data/processed/`:
+#### Option 2: Skip Transform (Use Existing CSVs)
+If you already ran the transform step once, you can load directly from `data/processed/`:
 
 ```powershell
 python -m etl.run_etl --skip-transform
@@ -333,9 +333,9 @@ python -m etl.run_etl --skip-transform
 
 ---
 
-### Step 5: Validate the Setup
+### Step 5: Validate
 
-Verify that the database structure and loaded data are complete and correct:
+Run the validation suite to make sure the data and schema loaded properly:
 
 1. **Automated Live MySQL Validation (27 Integrity Checks):**
    ```powershell
@@ -354,9 +354,9 @@ Verify that the database structure and loaded data are complete and correct:
 
 ---
 
-### Step 6: Run Analytical SQL Queries
+### Step 6: Run SQL Queries
 
-Once the setup is validated, the database is ready for analytical querying. You can connect through MySQL Workbench, VS Code, or Python scripts to run SQL queries against `multivendor_ecommerce_db`.
+Once validated, the database is ready for queries. You can connect via MySQL Workbench, VS Code, or command line to query `multivendor_ecommerce_db`.
 
 ---
 
@@ -378,15 +378,12 @@ The validation suite (`etl/validate/validate_etl.py`) enforces 27 relational and
 
 ---
 
-## 10. SQL Query Analysis Phase (Upcoming)
+## 10. Analytical Queries (Phase 4)
 
-The SQL analysis phase will focus on executing comprehensive analytical queries against the populated `multivendor_ecommerce_db` database, demonstrating:
-- Multi-table joins (inner, left, self-joins on recursive category hierarchy).
-- Aggregate analysis (GMV by category, vendor sales volume, customer lifetime value).
-- Nested subqueries and correlated subqueries.
-- Window functions and ranking (top-selling products per category, vendor performance percentiles).
-- Inventory reorder alerting and warehouse capacity utilization.
-- Business performance questions.
-
-*(Phase 4 query files and contributions will be added during the upcoming project phase.)*
+With the database populated, the next phase covers SQL queries for reporting and analytics:
+- Multi-table joins (including self-joins on the category tree).
+- Aggregations (sales by category, vendor volumes, customer spending).
+- Subqueries and correlated subqueries.
+- Window functions (rankings, running totals, percentiles).
+- Inventory alerts (items below reorder level, warehouse utilization).
 
