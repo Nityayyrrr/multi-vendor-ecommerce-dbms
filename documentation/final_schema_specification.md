@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary & Design Principles
 
-This document defines the definitive **12-table canonical relational database schema** and its corresponding **13-stage data-loading process** for the Multi-Vendor E-Commerce Database Management System.
+This document specifies the **12-table relational database schema** and the **13-stage data loading order** for the Multi-Vendor E-Commerce Database Management System.
 
 ### Core Architectural Decisions:
 
@@ -25,7 +25,7 @@ This document defines the definitive **12-table canonical relational database sc
 4. **Honest Source vs. Augmented Data Lineage:**  
    The Brazilian E-Commerce Olist dataset serves as the empirical backbone for real-world transaction topologies, pricing, order timelines, categories, and geographic locations. Missing enterprise attributes (such as customer names, authentication credentials, vendor tax IDs, warehouse hubs, product tags, and inventory stock levels) are cleanly modeled with explicit synthetic/augmented data generation pipelines. Source data boundaries are preserved without pretending missing attributes existed in the raw CSVs.
 
-5. **Academic Normalization Standard (Designed to satisfy 3NF, with BCNF satisfied where applicable):**  
+5. **Normalization Standards (3NF / BCNF where applicable):**  
    The schema focuses on clear, academically defensible normalization progression ($1\text{NF} \rightarrow 2\text{NF} \rightarrow 3\text{NF}$):
    - **1NF Compliance:** Multivalued customer phone numbers are decomposed into `customer_phone`, and multivalued product tags are decomposed into `product_tag`. All attributes contain strictly atomic scalar values.
    - **2NF Compliance:** Partial key dependencies are eliminated in composite-key entities (`address`, `customer_phone`, `product_tag`, `inventory`, `order_item`, `payment`). Every non-prime attribute is fully functionally dependent on the entire candidate/primary key.
@@ -120,7 +120,7 @@ This document defines the definitive **12-table canonical relational database sc
   - `customer` (1) $\rightarrow$ (0..N) `orders` (Mandatory in source data, optional in business lifecycle).
   - `customer` (1) $\rightarrow$ (1..N) `customer_phone` (Mandatory total participation; weak entity).
   - `customer` (1) $\rightarrow$ (1..N) `address` (Mandatory total participation; weak entity).
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.**  
+* **Normalization Analysis:** Satisfies 3NF and BCNF.  
   - *1NF:* All attributes are atomic.
   - *2NF:* No partial key dependencies (primary key is single-column `customer_id`).
   - *3NF:* No transitive dependencies ($customer\_id \rightarrow \{name, email, join_date\}$).
@@ -148,7 +148,7 @@ This document defines the definitive **12-table canonical relational database sc
 #### 3.2.3 Relationships & Normalization
 * **Cardinalities:** `customer` (1) $\rightarrow$ (1..N) `customer_phone`.
 * **Referential Action:** `ON DELETE CASCADE` ensures customer phone records are purged upon parent customer account deletion.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** As an identifying entity keyed by `(customer_id, phone_number)`, `phone_type` is fully dependent on the composite key, satisfying 3NF/BCNF.
+* **Normalization Analysis:** Satisfies 3NF. As an identifying entity keyed by `(customer_id, phone_number)`, `phone_type` is fully dependent on the composite key.
 
 ---
 
@@ -177,7 +177,7 @@ This document defines the definitive **12-table canonical relational database sc
 #### 3.3.3 Relationships & Normalization
 * **Cardinalities:** `customer` (1) $\rightarrow$ (1..N) `address`.
 * **Referential Action:** `ON DELETE CASCADE` ensures addresses are removed with customer deletion.
-* **Normalization Analysis:** **Designed to satisfy 3NF.** The composite key `(customer_id, address_type)` functionally determines all non-key address attributes. In relational modeling for e-commerce, capturing city, state, and pincode prefix together preserves the immutable delivery location entered by the customer without introducing update anomalies.
+* **Normalization Analysis:** Satisfies 3NF. The composite key `(customer_id, address_type)` functionally determines all non-key address attributes. Capturing city, state, and pincode prefix together preserves the delivery location entered by the customer without introducing update anomalies.
 
 ---
 
@@ -202,7 +202,7 @@ This document defines the definitive **12-table canonical relational database sc
 
 #### 3.4.3 Relationships & Normalization
 * **Cardinalities:** `vendor` (1) $\rightarrow$ (1..N) `product` (Mandatory: each vendor manages at least one product catalog item).
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** Both `vendor_id` and `gst_number` are candidate keys that uniquely determine all non-key attributes ($vendor\_id \rightarrow \{vendor\_name, rating, gst\_number\}$).
+* **Normalization Analysis:** Satisfies 3NF and BCNF. Both `vendor_id` and `gst_number` are candidate keys that uniquely determine all non-key attributes ($vendor\_id \rightarrow \{vendor\_name, rating, gst\_number\}$).
 
 ---
 
@@ -229,7 +229,7 @@ This document defines the definitive **12-table canonical relational database sc
   - `category` (parent: 0..1) $\rightarrow$ (children: 0..N) `category` (Recursive Adjacency Tree).
   - `category` (1) $\rightarrow$ (0..N) `product`.
 * **Referential Action:** `ON DELETE RESTRICT` prevents accidental orphan cascades of entire product classification trees.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** Hierarchical self-referencing structure eliminates redundant category repetition across tables.
+* **Normalization Analysis:** Satisfies 3NF. The hierarchical self-referencing structure eliminates redundant category definitions across tables.
 
 ---
 
@@ -267,7 +267,7 @@ This document defines the definitive **12-table canonical relational database sc
   - `product` (1) $\rightarrow$ (0..N) `product_tag`.
   - `product` (1) $\rightarrow$ (1..N) `inventory`.
   - `product` (1) $\rightarrow$ (0..N) `order_item`.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** `product_id` is the primary key and sole determinant for descriptive fields (`product_name`, `description`, `price`), while category and vendor relationships are cleanly isolated as foreign keys.
+* **Normalization Analysis:** Satisfies 3NF. `product_id` is the primary key and sole determinant for descriptive fields (`product_name`, `description`, `price`), while category and vendor relationships are isolated as foreign keys.
 
 ---
 
@@ -292,7 +292,7 @@ This document defines the definitive **12-table canonical relational database sc
 #### 3.7.3 Relationships & Normalization
 * **Cardinalities:** `product` (1) $\rightarrow$ (1..N) `product_tag`.
 * **Referential Action:** `ON DELETE CASCADE` removes tags when the product is deleted.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** Multivalued tag attribute is decomposed into an all-key relation `(product_id, tag)` in 1NF, satisfying 3NF/BCNF.
+* **Normalization Analysis:** All-key relation `(product_id, tag)` in 1NF, trivially satisfying 3NF and BCNF.
 
 ---
 
@@ -314,7 +314,7 @@ This document defines the definitive **12-table canonical relational database sc
 
 #### 3.8.3 Relationships & Normalization
 * **Cardinalities:** `warehouse` (1) $\rightarrow$ (0..N) `inventory`.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** `warehouse_id` is the primary key determining location and capacity ($warehouse\_id \rightarrow \{location, capacity\}$).
+* **Normalization Analysis:** Satisfies 3NF and BCNF. `warehouse_id` is the primary key determining location and capacity ($warehouse\_id \rightarrow \{location, capacity\}$).
 
 ---
 
@@ -344,7 +344,7 @@ This document defines the definitive **12-table canonical relational database sc
 
 #### 3.9.3 Relationships & Normalization
 * **Cardinalities:** `product` (M) $\leftrightarrow$ (N) `warehouse` resolved via `inventory`.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** The composite primary key `(product_id, warehouse_id)` determines `stock_quantity` and `reorder_level` with zero partial key dependencies.
+* **Normalization Analysis:** Satisfies 3NF. The composite primary key `(product_id, warehouse_id)` determines `stock_quantity` and `reorder_level` with no partial key dependencies.
 
 ---
 
@@ -376,7 +376,7 @@ This document defines the definitive **12-table canonical relational database sc
   - `orders` (1) $\rightarrow$ (1..N) `order_item`.
   - `orders` (1) $\rightarrow$ (1..N) `payment` (Identifying relationship).
 * **Referential Action:** `ON DELETE RESTRICT` prevents accidental deletion of customer records that have historical transaction records.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** `order_id` is the primary key determining order timestamp, customer reference, and status ($order\_id \rightarrow \{order\_date, customer\_id, status\}$).
+* **Normalization Analysis:** Satisfies 3NF and BCNF. `order_id` is the primary key determining order timestamp, customer reference, and status ($order\_id \rightarrow \{order\_date, customer\_id, status\}$).
 
 ---
 
@@ -405,7 +405,7 @@ This document defines the definitive **12-table canonical relational database sc
 
 #### 3.11.3 Relationships & Normalization
 * **Cardinalities:** `orders` (M) $\leftrightarrow$ (N) `product` resolved via `order_item`.
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** The composite key `(order_id, product_id)` determines `quantity` and `price_at_purchase`. `price_at_purchase` records historical transactional pricing at the time of purchase and is not partially dependent on `product_id` alone.
+* **Normalization Analysis:** Satisfies 3NF. The composite key `(order_id, product_id)` determines `quantity` and `price_at_purchase`. `price_at_purchase` records historical transactional pricing at the time of purchase and is not partially dependent on `product_id` alone.
 
 ---
 
@@ -443,7 +443,7 @@ This document defines the definitive **12-table canonical relational database sc
 * **Referential Action:** `ON DELETE CASCADE` automatically purges associated payment records when an order is deleted.
 * **Weak Entity Justification (Viva Defense):**  
   > *"Payment is an identifying weak entity because a payment does not exist independently of an Order. Its primary key `(order_id, payment_id)` incorporates the primary key of `orders`, establishing an identifying foreign-key relationship and total existence dependency on `orders`."*
-* **Normalization Analysis:** **Designed to satisfy 3NF, with BCNF satisfied where applicable.** The composite key `(order_id, payment_id)` determines all payment attributes (`amount`, `mode`, `status`, `payment_date`, `transaction_reference`). The secondary candidate key `transaction_reference` is also a valid determinant.
+* **Normalization Analysis:** Satisfies 3NF and BCNF. The composite key `(order_id, payment_id)` determines all payment attributes (`amount`, `mode`, `status`, `payment_date`, `transaction_reference`). The secondary candidate key `transaction_reference` is also a valid determinant.
 
 ---
 
@@ -671,4 +671,4 @@ SELECT COUNT(*) AS invalid_category_loops FROM category WHERE parent_category_id
 
 ---
 
-*Specification successfully updated and finalized. All 12 tables, weak entity relationships, honest data lineages, dynamic category handling, and 3NF normalization standards are fully documented.*
+*(End of Phase 1 Relational Schema Specification)*
