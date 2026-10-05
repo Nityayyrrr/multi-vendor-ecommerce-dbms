@@ -24,12 +24,10 @@ def main():
     args = parser.parse_args()
 
     pipeline_start = time.time()
-    print("================================================================================")
-    print("PHASE 3: OLIST ETL, DATA TRANSFORMATION & MYSQL 8.4 POPULATION PIPELINE")
-    print("================================================================================")
+    print("Starting ETL pipeline...")
 
     if args.validate_only:
-        print("[Mode: Live MySQL Validation Only]")
+        print("Running database validation only...")
         conn = get_connection()
         try:
             success, errors = validate_mysql_database(conn)
@@ -37,47 +35,45 @@ def main():
         finally:
             conn.close()
 
-    # Step 1: Extraction & Transformation
+    # step 1: transform
     if not args.skip_transform:
-        print("\n>>> STEP 1: EXTRACT & TRANSFORM DATASETS <<<")
+        print("\nStep 1: Transforming data...")
         datasets, metrics = run_transformation_pipeline()
     else:
-        print("\n>>> STEP 1: SKIPPED (Using existing files in data/processed/) <<<")
+        print("\nStep 1: Skipped transform (using existing data/processed/ CSVs)")
 
-    # Step 2: Pre-Load Dry Run Validation
-    print("\n>>> STEP 2: PRE-LOAD DRY RUN VALIDATION <<<")
+    # step 2: dry-run validation
+    print("Step 2: Validating processed files...")
     dry_run_passed, dry_run_errors = validate_dry_run_csvs()
     if not dry_run_passed:
-        print("\n[CRITICAL ERROR] Dry run validation failed. Aborting MySQL population.")
+        print("\nDry run validation failed. Stopping before database load.")
         sys.exit(1)
 
     if args.dry_run_only:
-        print("\n[OK] Dry run completed successfully (--dry-run-only specified). Exiting without MySQL load.")
+        print("Dry run finished (--dry-run-only specified). Exiting.")
         sys.exit(0)
 
-    # Step 3: MySQL 8.4 Schema Initialization
-    print("\n>>> STEP 3: INITIALIZE MYSQL 8.4 DATABASE & SCHEMA <<<")
+    # step 3: schema init
+    print("Step 3: Initializing database schema...")
     initialize_database_schema()
 
-    # Step 4: 13-Stage Topological MySQL Loading
-    print("\n>>> STEP 4: 13-STAGE TOPOLOGICAL MYSQL BATCH LOADING <<<")
+    # step 4: load
+    print("Step 4: Loading data into MySQL...")
     loaded_counts = execute_13_stage_load()
 
-    # Step 5: Post-Load Live Validation
-    print("\n>>> STEP 5: POST-LOAD LIVE MYSQL VALIDATION SUITE <<<")
+    # step 5: live validation
+    print("Step 5: Validating database...")
     conn = get_connection()
     try:
         live_passed, live_errors = validate_mysql_database(conn)
         if not live_passed:
-            print("\n[CRITICAL ERROR] Live MySQL database validation failed.")
+            print("\nDatabase validation failed.")
             sys.exit(1)
     finally:
         conn.close()
 
     total_pipeline_time = round(time.time() - pipeline_start, 2)
-    print("================================================================================")
-    print(f"PHASE 3 ETL PIPELINE COMPLETED SUCCESSFULLY IN {total_pipeline_time}s")
-    print("================================================================================")
+    print(f"\nPipeline finished in {total_pipeline_time}s.")
 
 if __name__ == "__main__":
     main()
