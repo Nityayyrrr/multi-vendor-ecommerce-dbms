@@ -1,6 +1,6 @@
 # Multi-Vendor E-Commerce & Inventory Management System
 
-A relational database management system (DBMS) project modeling an online multi-vendor retail platform (similar to Amazon / Flipkart). Built with **MySQL 8.4** and populated using a deterministic Python ETL pipeline that processes the real-world **Brazilian E-Commerce Public Dataset by Olist**.
+A relational database management system (DBMS) project modeling an online multi-vendor retail platform (similar to Amazon / Flipkart). Built with **MySQL 8.4**, populated via a Python ETL pipeline from the **Brazilian E-Commerce Public Dataset by Olist** (772,247 loaded records), and completed with an analytical SQL query suite (95 queries across 4 team members).
 
 ---
 
@@ -16,6 +16,8 @@ This project implements a normalized relational database in MySQL 8.4 to model t
 - Regional warehouse hubs with inventory tracking and reorder levels.
 - Order processing with line items (quantity and price preserved) and split payments.
 
+Following database population, the project implements an analytical query suite of 95 SQL queries divided among four team members. These queries cover operational reporting, catalog search, warehouse logistics, and customer order analytics using multi-table joins, correlated subqueries, set comparisons, and recursive hierarchy navigation.
+
 ---
 
 ## 2. Objectives
@@ -25,6 +27,7 @@ This project implements a normalized relational database in MySQL 8.4 to model t
 3. **Deterministic ETL Pipeline:** Build an ETL script in Python that cleans, transforms, and loads the data without touching the raw CSV files.
 4. **Data Integrity:** Enforce primary and composite keys, foreign keys (with proper cascade/restrict rules), unique constraints, and check constraints.
 5. **Automated Validation:** Verify everything with a 27-check test suite (runnable both against intermediate CSVs and the live MySQL database).
+6. **Analytical Query Suite:** Implement an analytical SQL query suite across 4 team members covering joins, multi-level aggregations, subqueries, relational division, and self-referencing category tree traversals.
 
 ---
 
@@ -36,6 +39,7 @@ This project implements a normalized relational database in MySQL 8.4 to model t
 - **Database Driver:** PyMySQL
 - **Environment Management:** python-dotenv
 - **Dataset:** Brazilian E-Commerce Public Dataset by Olist (Kaggle)
+- **Query Capabilities:** Complex multi-table joins, correlated subqueries, set comparisons (ALL, SOME), relational division, and recursive hierarchy queries
 
 ---
 
@@ -181,7 +185,7 @@ To satisfy all foreign key constraints without disabling integrity checks:
 12. `ORDER_ITEM`
 13. `PAYMENT`
 
-**Total Database Records Loaded:** **778,244**
+**Total Database Records Loaded:** **772,247**
 
 ---
 
@@ -191,48 +195,63 @@ To satisfy all foreign key constraints without disabling integrity checks:
 multi-vendor-ecommerce-dbms/
 │
 ├── data/
-│   ├── raw/                       # Immutable source Olist CSV files (9 datasets)
-│   └── processed/                 # Staged intermediate CSV files (12 clean datasets)
+│   ├── raw/                                 # Immutable source Olist CSV files (9 datasets, ~1.45M rows)
+│   └── processed/                           # Staged intermediate CSV files (12 normalized tables, 772,247 rows)
 │
 ├── database/
-│   ├── 01_create_database.sql     # Database creation and character set setup (Phase 1 modular)
-│   ├── 02_create_tables.sql       # Table definitions for all 12 entities (Phase 1 modular)
-│   ├── 03_constraints.sql         # Primary keys, foreign keys, unique, and check constraints (Phase 1 modular)
-│   ├── 04_validation_queries.sql  # SQL queries to verify schema and constraints
-│   ├── schema.sql                 # Complete schema definition script
-│   ├── setup_database.sql         # Database creation script (uses IF NOT EXISTS)
-│   └── validate_schema.py         # Static schema validation script
+│   ├── 01_create_database.sql               # Database creation and character set setup (Phase 1 modular)
+│   ├── 02_create_tables.sql                 # Table definitions for all 12 entities (Phase 1 modular)
+│   ├── 03_constraints.sql                   # Primary keys, foreign keys, unique, and check constraints
+│   ├── 04_validation_queries.sql            # Information schema queries verifying schema and constraints
+│   ├── schema.sql                           # Complete monolithic schema definition script
+│   ├── setup_database.sql                   # Safe database creation script (uses IF NOT EXISTS)
+│   └── validate_schema.py                   # Static schema validation script
 │
 ├── documentation/
-│   ├── final_schema_specification.md           # Phase 1: ER modeling & schema specification
-│   ├── phase2_dataset_analysis_and_mapping.md  # Phase 2: Source data analysis & mapping
-│   └── phase3_etl_reconciliation_report.md     # Phase 3: ETL reconciliation audit report
+│   ├── ER DIAGRAM.pdf                       # Relational Entity-Relationship diagram
+│   └── final_schema_specification.md         # Phase 1: Conceptual ER modeling & relational schema specification
 │
 ├── etl/
 │   ├── load/
 │   │   ├── __init__.py
-│   │   ├── db_connection.py       # PyMySQL connection manager and DDL executor
-│   │   └── loader.py              # 13-stage topological MySQL batch loader
+│   │   ├── db_connection.py                 # PyMySQL connection manager and DDL executor
+│   │   └── loader.py                        # 13-stage topological MySQL batch loader
 │   ├── transform/
 │   │   ├── __init__.py
-│   │   ├── pipeline.py            # Transformation pipeline runner
-│   │   ├── transform_catalog.py   # Transforms CATEGORY, PRODUCT, and PRODUCT_TAG
-│   │   ├── transform_customers.py # Transforms CUSTOMER, CUSTOMER_PHONE, and ADDRESS
-│   │   ├── transform_inventory.py # Transforms WAREHOUSE and INVENTORY
-│   │   ├── transform_orders.py    # Transforms ORDERS and ORDER_ITEM
-│   │   ├── transform_payments.py  # Transforms PAYMENT
-│   │   └── transform_vendors.py   # Transforms VENDOR
+│   │   ├── pipeline.py                      # Transformation pipeline orchestrator
+│   │   ├── transform_catalog.py             # Transforms CATEGORY, PRODUCT, and PRODUCT_TAG
+│   │   ├── transform_customers.py           # Transforms CUSTOMER, CUSTOMER_PHONE, and ADDRESS
+│   │   ├── transform_inventory.py           # Transforms WAREHOUSE and INVENTORY
+│   │   ├── transform_orders.py              # Transforms ORDERS and ORDER_ITEM
+│   │   ├── transform_payments.py            # Transforms PAYMENT
+│   │   └── transform_vendors.py             # Transforms VENDOR
 │   ├── validate/
 │   │   ├── __init__.py
-│   │   └── validate_etl.py        # 27-check validation suite (Dry-run & Live MySQL)
-│   ├── config.py                  # Configuration, directory paths, and database settings
-│   ├── README.md                  # ETL pipeline documentation
-│   └── run_etl.py                 # Main CLI runner
+│   │   └── validate_etl.py                  # 27-check validation suite (Dry-run & Live MySQL)
+│   ├── config.py                            # Central path configurations and database credentials
+│   ├── README.md                            # ETL pipeline documentation
+│   └── run_etl.py                           # Main CLI pipeline runner
 │
-├── .env.example                   # Template environment configuration
-├── .gitignore                     # Git exclusion rules (credentials, cache, virtual environments)
-├── requirements.txt               # Required Python packages (pymysql, python-dotenv)
-└── README.md                      # Project root documentation
+├── member1/
+│   ├── Queries/                             # Member 1 analytical SQL queries (25 queries, Query-1 to Query-25)
+│   └── Screenshots/                         # Execution output screenshots for Member 1 queries (25 captures)
+│
+├── member2/
+│   ├── Queries/                             # Member 2 analytical SQL queries (20 queries, 01 to 20)
+│   └── Screenshots/                         # Execution output screenshots for Member 2 queries (20 captures)
+│
+├── member3/
+│   ├── Queries/                             # Member 3 analytical SQL queries (25 queries, Queries- 1 to Queries- 25)
+│   └── Screenshots/                         # Execution output screenshots for Member 3 queries (25 captures)
+│
+├── member4/
+│   ├── Queries/                             # Member 4 analytical SQL queries (25 queries, Query1 to Query25)
+│   └── Screenshots/                         # Execution output screenshots for Member 4 queries (25 captures)
+│
+├── .env.example                             # Template environment configuration file
+├── .gitignore                               # Git exclusion rules (credentials, cache, data artifacts)
+├── requirements.txt                         # Required Python dependencies (pymysql, python-dotenv)
+└── README.md                                # Root project documentation
 ```
 
 ---
@@ -318,7 +337,7 @@ If you run the ETL pipeline (Step 4), the script automatically executes the sche
 Run the pipeline using `etl/run_etl.py`:
 
 #### Option 1: Full Pipeline (Transform + Load + Validate)
-Transforms the raw CSVs, runs dry-run checks, creates the schema, loads all 778,244 rows across the 13 stages, and validates the live database:
+Transforms the raw CSVs, runs dry-run checks, creates the schema, loads all 772,247 rows across the 13 stages, and validates the live database:
 
 ```powershell
 python -m etl.run_etl
@@ -354,9 +373,40 @@ Run the validation suite to make sure the data and schema loaded properly:
 
 ---
 
-### Step 6: Run SQL Queries
+### Step 6: Run Analytical SQL Queries
 
-Once validated, the database is ready for queries. You can connect via MySQL Workbench, VS Code, or command line to query `multivendor_ecommerce_db`.
+Once the database is populated and validated, run the analytical queries using MySQL CLI or MySQL Workbench.
+
+#### Running Individual Queries via MySQL CLI
+
+Execute any individual query script against `multivendor_ecommerce_db`:
+
+```powershell
+# Windows PowerShell
+mysql -u root -p multivendor_ecommerce_db < member1/Queries/Query-1.sql
+mysql -u root -p multivendor_ecommerce_db < member2/Queries/01_product_category.sql
+mysql -u root -p multivendor_ecommerce_db < "member3/Queries/Queries- 1.sql"
+mysql -u root -p multivendor_ecommerce_db < member4/Queries/Query1.sql
+```
+
+#### Running an Entire Member Query Suite in PowerShell
+
+To execute all queries for a team member in batch:
+
+```powershell
+# Run all Member 1 queries
+Get-ChildItem -Path "member1/Queries/*.sql" | Sort-Object { [int]($_.BaseName -replace '\D') } | ForEach-Object {
+    Write-Host "Running $($_.Name)..." -ForegroundColor Cyan
+    Get-Content $_.FullName | mysql -u root -p multivendor_ecommerce_db
+}
+```
+
+#### Running via MySQL Workbench
+1. Open MySQL Workbench and connect to your local MySQL 8.4 instance.
+2. Select **File > Open SQL Script...** and navigate to any file in `member1/Queries/`, `member2/Queries/`, `member3/Queries/`, or `member4/Queries/`.
+3. Ensure `multivendor_ecommerce_db` is selected as the default schema (`USE multivendor_ecommerce_db;`).
+4. Execute the query using `Ctrl + Shift + Enter`.
+5. Compare the tabular result grid against the reference captures in the corresponding `Screenshots/` folder.
 
 ---
 
@@ -378,12 +428,197 @@ The validation suite (`etl/validate/validate_etl.py`) enforces 27 relational and
 
 ---
 
-## 10. Analytical Queries (Phase 4)
+## 10. Analytical SQL Query Suite
 
-With the database populated, the next phase covers SQL queries for reporting and analytics:
+The analytical query phase is complete. The team implemented 95 SQL queries organized into 4 member directories, covering reporting, catalog exploration, inventory alerts, and customer behavior analysis:
 - Multi-table joins (including self-joins on the category tree).
 - Aggregations (sales by category, vendor volumes, customer spending).
 - Subqueries and correlated subqueries.
-- Window functions (rankings, running totals, percentiles).
+- Window functions and ranking equivalents (running totals, percentiles, top-N filters).
 - Inventory alerts (items below reorder level, warehouse utilization).
+
+Each team member worked on an assigned query folder with accompanying execution screenshots:
+
+| Directory | Member | Files | Numbering Range | Screenshots Folder |
+| :--- | :--- | :---: | :--- | :--- |
+| `member1/Queries/` | Member 1 (Aryan) | 25 | `Query-1.sql` to `Query-25.sql` | `member1/Screenshots/` (25 images) |
+| `member2/Queries/` | Member 2 (Jahnavi Gautam) | 20 | `01_product_category.sql` to `20_products_using_exists.sql` | `member2/Screenshots/` (20 images) |
+| `member3/Queries/` | Member 3 (Niyati Tyagi) | 25 | `Queries- 1.sql` to `Queries- 25.sql` | `member3/Screenshots/` (25 images) |
+| `member4/Queries/` | Member 4 (Nityay Bhavsar) | 25 | `Query1.sql` to `Query25.sql` | `member4/Screenshots/` (25 images) |
+
+---
+
+## 11. Query Difficulty Tiers & Catalog
+
+The query suite is structured across three difficulty tiers:
+- **Tier 1 (Basic):** Single-table projections, basic filtering (`WHERE`, `BETWEEN`, `LIKE`), sorting (`ORDER BY`, `LIMIT`), and single-table aggregate functions (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`).
+- **Tier 2 (Intermediate):** Multi-table `INNER JOIN` and `LEFT JOIN` operations, `GROUP BY` with aggregate calculations, `HAVING` filters, date extractions (`YEAR`, `MONTH`), and scalar subqueries.
+- **Tier 3 (Advanced):** Correlated subqueries (`EXISTS`, `NOT EXISTS`), set comparison predicates (`> ALL`, `> SOME`), relational division (finding entities associated with all items of a group), multi-level subqueries in `HAVING` and `FROM`, self-joins on the recursive category hierarchy, and multi-source financial reconciliation checks.
+
+### Difficulty Tier Distribution
+
+| Member | Directory | Total Queries | Tier 1 (Basic) | Tier 2 (Intermediate) | Tier 3 (Advanced) |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Member 1 | `member1/Queries/` | 25 | 7 | 11 | 7 |
+| Member 2 | `member2/Queries/` | 20 | 6 | 9 | 5 |
+| Member 3 | `member3/Queries/` | 25 | 8 | 10 | 7 |
+| Member 4 | `member4/Queries/` | 25 | 8 | 10 | 7 |
+| **Total** | | **95** | **29** | **40** | **26** |
+
+---
+
+### Member 1 Query Catalog (Aryan)
+
+| File | Business Question / Purpose | Tier | SQL Concepts Used | Tables Referenced |
+| :--- | :--- | :---: | :--- | :--- |
+| `Query-1.sql` | Products with their assigned vendor names | Tier 2 | INNER JOIN | `product`, `vendor` |
+| `Query-2.sql` | Products priced above overall catalog average | Tier 2 | Scalar Subquery, AVG() | `product` |
+| `Query-3.sql` | Full customer account profiles | Tier 1 | SELECT * | `customer` |
+| `Query-4.sql` | Warehouse holding highest count of low-stock items | Tier 2 | INNER JOIN, GROUP BY, COUNT(), ORDER BY, LIMIT | `warehouse`, `inventory` |
+| `Query-5.sql` | Order count per customer account | Tier 2 | LEFT JOIN, GROUP BY, COUNT() | `customer`, `orders` |
+| `Query-6.sql` | Top 10 lowest-priced products | Tier 1 | ORDER BY price ASC, LIMIT 10 | `product` |
+| `Query-7.sql` | Vendors with rating higher than all vendors rated below 3.0 | Tier 3 | > ALL (Subquery) | `vendor` |
+| `Query-8.sql` | Warehouses and stock items including empty allocations | Tier 2 | LEFT JOIN | `warehouse`, `inventory` |
+| `Query-9.sql` | Average vendor review rating across marketplace | Tier 1 | Aggregate AVG() | `vendor` |
+| `Query-10.sql` | Relational division: customers buying every product in category 5 | Tier 3 | 4-table JOIN, GROUP BY, HAVING COUNT = Subquery | `customer`, `orders`, `order_item`, `product` |
+| `Query-11.sql` | Gross revenue generated per vendor | Tier 2 | 3-table JOIN, GROUP BY, SUM(quantity * price) | `vendor`, `product`, `order_item` |
+| `Query-12.sql` | Product search matching keyword 'bed' | Tier 1 | LIKE '%bed%' | `product` |
+| `Query-13.sql` | Highest-priced product within each category | Tier 3 | JOIN with Subquery (GROUP BY MAX price) | `category`, `product` |
+| `Query-14.sql` | Line items with quantity and historical purchase price | Tier 2 | INNER JOIN | `order_item`, `product` |
+| `Query-15.sql` | Products in price range between 50 and 200 | Tier 1 | BETWEEN 50 AND 200, ORDER BY | `product` |
+| `Query-16.sql` | Customers spending above the average customer spending | Tier 3 | 3-table JOIN, GROUP BY, HAVING > Subquery on Subquery | `customer`, `orders`, `payment` |
+| `Query-17.sql` | Products distributed across more than one warehouse | Tier 2 | INNER JOIN, GROUP BY, HAVING COUNT > 1 | `product`, `inventory` |
+| `Query-18.sql` | Product count per category including empty categories | Tier 2 | LEFT JOIN, GROUP BY, COUNT(), ORDER BY DESC | `category`, `product` |
+| `Query-19.sql` | Products stocked in every single warehouse hub | Tier 3 | Correlated Subqueries (Double NOT EXISTS) | `product`, `warehouse`, `inventory` |
+| `Query-20.sql` | Annual order volume trends | Tier 1 | YEAR(order_date), GROUP BY, COUNT() | `orders` |
+| `Query-21.sql` | Total count of catalog products | Tier 1 | Aggregate COUNT(*) | `product` |
+| `Query-22.sql` | Active vendors with no catalog items priced at or below 100 | Tier 3 | Correlated EXISTS and NOT EXISTS | `vendor`, `product` |
+| `Query-23.sql` | Inactive customers who have never placed an order | Tier 2 | LEFT JOIN WHERE order_id IS NULL | `customer`, `orders` |
+| `Query-24.sql` | Delivered orders filter | Tier 1 | WHERE status = 'delivered' | `orders` |
+| `Query-25.sql` | Financial reconciliation: order item total vs payment total | Tier 3 | Multi-table LEFT JOIN Subqueries, COALESCE, ABS() | `orders`, `order_item`, `payment` |
+
+---
+
+### Member 2 Query Catalog (Jahnavi Gautam)
+
+| File | Business Question / Purpose | Tier | SQL Concepts Used | Tables Referenced |
+| :--- | :--- | :---: | :--- | :--- |
+| `01_product_category.sql` | Product names mapped to category names | Tier 2 | INNER JOIN | `product`, `category` |
+| `02_vendor_above_average_rating.sql` | Vendors with rating above marketplace average | Tier 2 | Scalar Subquery with AVG() | `vendor` |
+| `03_customer_id_email.sql` | Customer profile identifiers and emails | Tier 1 | SELECT customer_id, email | `customer` |
+| `04_customers_never_ordered.sql` | Customers with no purchase records | Tier 3 | Correlated Subquery (NOT EXISTS) | `customer`, `orders` |
+| `05_payment_order_status.sql` | Payment identifiers and transaction statuses | Tier 1 | SELECT payment_id, order_id, status | `payment` |
+| `06_vendors_rating_above_4.sql` | Vendors rated above 4.0 | Broken | Empty file (0 bytes) | None |
+| `07_products_greater_than_all_category.sql` | Products priced above all products in Category 1 | Tier 3 | > ALL (Subquery) | `product` |
+| `08_total_quantity_purchased_per_product.sql` | Total units ordered per product | Tier 2 | INNER JOIN, GROUP BY, SUM(quantity) | `product`, `order_item` |
+| `09_products_ascending_price.sql` | Products ordered by price ascending | Tier 1 | ORDER BY price ASC | `product` |
+| `10_category_with_largest_product_count.sql` | Category with the largest number of products | Tier 2 | INNER JOIN, GROUP BY, COUNT(), ORDER BY, LIMIT 1 | `category`, `product` |
+| `11_vendors_with_product_count.sql` | Total products offered per vendor | Tier 2 | LEFT JOIN, GROUP BY, COUNT() | `vendor`, `product` |
+| `12_distinct_customer_states.sql` | Unique customer states in address book | Tier 1 | SELECT DISTINCT state | `address` |
+| `13_customers_with_orders_exists.sql` | Customers who placed at least one order | Tier 3 | Correlated Subquery (EXISTS) | `customer`, `orders` |
+| `14_products_and_warehouses.sql` | Products mapped to fulfillment warehouses | Tier 2 | 3-table INNER JOIN | `product`, `inventory`, `warehouse` |
+| `15_total_vendors.sql` | Total count of registered marketplace vendors | Tier 1 | Aggregate COUNT(*) | `vendor` |
+| `16_vendor_highest_avg_product_price.sql` | Vendor with highest average item price | Tier 2 | INNER JOIN, GROUP BY, AVG(), ORDER BY, LIMIT 1 | `vendor`, `product` |
+| `17_categories_no_products.sql` | Categories that contain zero products | Tier 2 | LEFT JOIN WHERE product_id IS NULL | `category`, `product` |
+| `18_payments_by_payment_mode.sql` | Payment count grouped by payment method | Broken | Empty file (0 bytes) | None |
+| `19_orders_date_range.sql` | Orders placed during calendar year 2024 | Tier 1 | BETWEEN '2024-01-01' AND '2024-12-31' *(0 rows)* | `orders` |
+| `20_products_using_exists.sql` | Products that have been ordered at least once | Tier 3 | Correlated Subquery (EXISTS) | `product`, `order_item` |
+
+---
+
+### Member 3 Query Catalog (Niyati Tyagi)
+
+| File | Business Question / Purpose | Tier | SQL Concepts Used | Tables Referenced |
+| :--- | :--- | :---: | :--- | :--- |
+| `Queries- 1.sql` | Order records with customer contact information | Tier 2 | INNER JOIN | `orders`, `customer` |
+| `Queries- 2.sql` | Payments exceeding average transaction amount | Tier 2 | Scalar Subquery with AVG() | `payment` |
+| `Queries- 3.sql` | Products priced above 100 | Tier 1 | WHERE price > 100 | `product` |
+| `Queries- 4.sql` | Highest-priced product within its own category | Tier 3 | Correlated Subquery (MAX per category) | `product` |
+| `Queries- 5.sql` | Product inventory stock and warehouse location | Tier 2 | 3-table INNER JOIN | `inventory`, `product`, `warehouse` |
+| `Queries- 6.sql` | Total count of customer accounts | Tier 1 | Aggregate COUNT(*) | `customer` |
+| `Queries- 7.sql` | Vendors selling strictly products priced over 100 | Tier 3 | Correlated Subquery (NOT EXISTS <= 100) | `vendor`, `product` |
+| `Queries- 8.sql` | Aggregated inventory stock per warehouse | Tier 2 | GROUP BY, SUM(stock_quantity) | `inventory` |
+| `Queries- 9.sql` | Warehouse locations and aggregated physical units | Tier 2 | INNER JOIN, GROUP BY, SUM() | `warehouse`, `inventory` |
+| `Queries-10.sql` | Customer accounts sorted alphabetically by email | Tier 1 | ORDER BY email ASC | `customer` |
+| `Queries- 11.sql` | Relational division: customers buying every product in category 3 | Tier 3 | Correlated Subqueries (Double NOT EXISTS) | `customer`, `product`, `orders`, `order_item` |
+| `Queries- 12.sql` | Total products per category including empty groups | Tier 2 | LEFT JOIN, GROUP BY, COUNT() | `category`, `product` |
+| `Queries- 13.sql` | All items classified under category 3 | Tier 1 | WHERE category_id = 3 | `product` |
+| `Queries - 14.sql`| Monthly order distribution across the calendar year | Tier 2 | MONTH(order_date), GROUP BY, COUNT() | `orders` |
+| `Queries- 15.sql` | Count of distinct Brazilian states represented | Tier 1 | COUNT(DISTINCT state) | `address` |
+| `Queries- 16.sql` | Category with highest average product price | Tier 2 | GROUP BY, AVG(), ORDER BY DESC, LIMIT 1 | `product` |
+| `Queries- 17.sql` | Catalog products currently unstocked in any warehouse | Tier 3 | Correlated Subquery (NOT EXISTS) | `product`, `inventory` |
+| `Queries- 18.sql` | Top 10 most expensive items in product catalog | Tier 1 | ORDER BY price DESC, LIMIT 10 | `product` |
+| `Queries- 19.sql` | Products priced higher than at least one item in category 5 | Tier 3 | > SOME (Subquery) | `product` |
+| `Queries- 20.sql` | Line item order breakdown with customer and product names | Tier 2 | 4-table INNER JOIN | `orders`, `customer`, `order_item`, `product` |
+| `Queries- 21.sql` | Total sum of payments received | Tier 1 | Aggregate SUM(amount) | `payment` |
+| `Queries- 22.sql` | Customers ordering more frequently than customer average | Tier 3 | GROUP BY, HAVING > Subquery on Subquery | `orders` |
+| `Queries- 23.sql` | Total customer spending across all orders | Tier 2 | 3-table INNER JOIN, GROUP BY, SUM(amount) | `customer`, `orders`, `payment` |
+| `Queries- 24.sql` | Customers with domain filter `@vitbhopal.ac.in` | Tier 1 | LIKE '%@vitbhopal.ac.in' *(0 rows)* | `customer` |
+| `Queries- 25.sql` | Top product by total sales volume | Tier 2 | INNER JOIN, GROUP BY, SUM(quantity), LIMIT 1 | `product`, `order_item` |
+
+---
+
+### Member 4 Query Catalog (Nityay Bhavsar)
+
+| File | Business Question / Purpose | Tier | SQL Concepts Used | Tables Referenced |
+| :--- | :--- | :---: | :--- | :--- |
+| `Query1.sql` | Master list of all registered vendors | Tier 1 | SELECT * | `vendor` |
+| `Query2.sql` | Products priced above 100 | Tier 1 | WHERE price > 100 | `product` |
+| `Query3.sql` | Total count of registered customers | Tier 1 | Aggregate COUNT(*) | `customer` |
+| `Query4.sql` | Catalog items ordered by price ascending | Tier 1 | ORDER BY price ASC | `product` |
+| `Query5.sql` | Payments processed via credit card | Tier 1 | WHERE mode = 'Credit Card' *(0 rows)* | `payment` |
+| `Query6.sql` | Minimum and maximum catalog product prices | Tier 1 | Aggregates MIN(), MAX() | `product` |
+| `Query7.sql` | Orders with delivered status | Tier 1 | WHERE status = 'Delivered' | `orders` |
+| `Query8.sql` | Product search matching name pattern | Tier 1 | LIKE '%Toys Product #009AF1%' | `product` |
+| `Query9.sql` | Order line items with quantity and unit price | Tier 2 | INNER JOIN | `order_item`, `product` |
+| `Query10.sql` | Warehouse hubs and distinct product counts | Tier 2 | LEFT JOIN, GROUP BY, COUNT() | `warehouse`, `inventory` |
+| `Query11.sql` | Products linked with vendor name and category name | Tier 2 | 3-table INNER JOIN | `product`, `vendor`, `category` |
+| `Query12.sql` | Total units ordered per product | Tier 2 | LEFT JOIN, GROUP BY, COALESCE(SUM(), 0) | `product`, `order_item` |
+| `Query13.sql` | Total units ordered per product *(Duplicate of Q12)* | Tier 2 | Duplicate logic and text of Query12 | `product`, `order_item` |
+| `Query14.sql` | Customer order volume including zero-order accounts | Tier 2 | LEFT JOIN, GROUP BY, COUNT() | `customer`, `orders` |
+| `Query15.sql` | Products with warehouse locations and stock levels | Tier 2 | 3-table INNER JOIN | `product`, `inventory`, `warehouse` |
+| `Query16.sql` | Customer order volume *(Duplicate logic of Q14)* | Tier 2 | Duplicate query without header comment | `customer`, `orders` |
+| `Query17.sql` | Sales revenue generated per vendor | Tier 2 | 3-table INNER JOIN, GROUP BY, SUM() | `vendor`, `product`, `order_item` |
+| `Query18.sql` | Customers ordering above average customer frequency | Tier 3 | LEFT JOIN, GROUP BY, HAVING > Subquery | `customer`, `orders` |
+| `Query19.sql` | Products stocked across all warehouse locations | Tier 3 | INNER JOIN, GROUP BY, HAVING COUNT = Subquery | `product`, `inventory`, `warehouse` |
+| `Query20.sql` | Vendors with rating higher than at least one vendor | Tier 3 | > SOME (Subquery) | `vendor` |
+| `Query21.sql` | Customers who placed at least one order | Tier 3 | Correlated Subquery (EXISTS) | `customer`, `orders` |
+| `Query22.sql` | Category containing the largest number of products | Tier 2 | INNER JOIN, GROUP BY, COUNT(), ORDER BY, LIMIT 1 | `category`, `product` |
+| `Query23.sql` | Products priced above their own category average | Tier 3 | Correlated Subquery (AVG per category) | `product`, `category` |
+| `Query24.sql` | Customers who have never placed an order | Tier 3 | Correlated Subquery (NOT EXISTS) | `customer`, `orders` |
+| `Query25.sql` | Intermediate categories with both parent and child | Tier 3 | Self-Join on category tree | `category` |
+
+---
+
+## 12. Team Members & Contributions
+
+The project was completed by a four-member team, with tasks divided across relational modeling, Python ETL engineering, constraint validation, and analytical SQL query formulation:
+
+| Team Member | Registration No. | GitHub / Branch | Assigned Module | Deliverables |
+| :--- | :--- | :--- | :--- | :--- |
+| **Aryan** | *(Project Lead)* | `main` | Database Architecture, Python ETL, Member 1 Analysis | Relational schema design, 13-stage topological ETL pipeline, 27-check validation suite, Member 1 SQL queries (1–25) |
+| **Jahnavi Gautam** | 25BCE10361 | `25BCE10361` | Member 2 Analysis | Member 2 analytical SQL queries (01–20) and query execution screenshots |
+| **Niyati Tyagi** | 25BCE11103 | `member3` | Member 3 Analysis | Member 3 analytical SQL queries (1–25) and query execution screenshots |
+| **Nityay Bhavsar** | 24BCG10064 | `SQL_QUERIES_24BCG10064` | Member 4 Analysis | Member 4 analytical SQL queries (1–25) and query execution screenshots |
+
+---
+
+## 13. Known Limitations & Technical Notes
+
+1. **Member 2 Query Count:** Member 2 includes 20 query scripts (`01` through `20`). Queries 21 to 25 were not submitted to the repository.
+2. **Empty Query Files:** Member 2 contains two 0-byte files (`06_vendors_rating_above_4.sql` and `18_payments_by_payment_mode.sql`).
+3. **Duplicate Scripts in Member 4:** `Query12.sql` and `Query13.sql` share identical SQL text and comments. `Query14.sql` and `Query16.sql` share identical query logic.
+4. **Order Status Casing:** The ETL normalizes order status strings to uppercase (`DELIVERED`, `SHIPPED`, `CANCELLED`). `Query-24.sql` (Member 1) uses lowercase `'delivered'`, and `Query7.sql` (Member 4) uses Title Case `'Delivered'`. On default case-insensitive collations these resolve, but explicit uppercase matching aligns directly with database constraints.
+5. **Payment Mode Casing:** Payment modes in `payment.mode` are stored as lowercase strings (`credit_card`, `boleto`, `voucher`, `debit_card`). `Query5.sql` (Member 4) filters for `'Credit Card'`, which returns zero rows against the loaded database.
+6. **Date Range Bounds:** The Olist dataset covers orders between 2016 and 2018. `19_orders_date_range.sql` (Member 2) specifies dates in 2024, returning zero rows on this historical dataset.
+7. **Email Domain Filtering:** Synthetic customer emails generated during ETL use `@ecommerce-demo.com`. `Queries- 24.sql` (Member 3) queries for `@vitbhopal.ac.in`, returning zero records.
+8. **Stored Routines:** The analytical suite consists entirely of SQL `SELECT` queries (DQL). Views, stored procedures, triggers, and transactions were not introduced into the repository.
+
+---
+
+## 14. Acknowledgements & References
+
+- **Dataset:** [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) on Kaggle. Contains 100k real marketplace orders from 2016 to 2018.
+- **Database System:** Oracle MySQL 8.4 LTS Reference Manual for relational storage engine specifications, indexing, and window function support.
+- **Academic Context:** Course project for Relational Database Management Systems (DBMS), VIT Bhopal University.
 
